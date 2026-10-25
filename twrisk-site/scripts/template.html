@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>台海風險指標追蹤表（多來源・可自選來源）</title>
+<style>
+  :root{
+    --fg: var(--foreground, #1b1b1e); --mut: var(--muted-foreground, #6b6b70);
+    --bd: var(--border, #d8d8dc); --cd: var(--card, #f6f6f7); --ac: var(--accent, #2f6fd0);
+    --ok:#1f8a4c; --warn:#c98a10; --bad:#c0392b;
+  }
+  *{box-sizing:border-box}
+  body{font-family:"Microsoft JhengHei","PingFang TC","Noto Sans TC",system-ui,sans-serif;
+       color:var(--fg);font-size:13.5px;line-height:1.6;margin:0}
+  .wrap{max-width:940px}
+  h1{font-size:19px;margin:0 0 2px}
+  .sub{color:var(--mut);font-size:12px}
+  .m{color:var(--mut);font-size:11.5px}
+  .panel{border:1px solid var(--bd);border-radius:8px;padding:10px 12px;margin:10px 0;background:var(--cd)}
+  .big{font-size:26px;font-weight:800;line-height:1.1}
+  .row{display:flex;gap:22px;flex-wrap:wrap;align-items:baseline}
+  h2{font-size:13.5px;margin:18px 0 6px;padding-left:8px;border-left:3px solid var(--ac)}
+  table{width:100%;border-collapse:collapse}
+  th,td{border:1px solid var(--bd);padding:6px 8px;vertical-align:top;text-align:left}
+  th{background:var(--cd);font-size:12.5px}
+  td.ind{width:22%;font-weight:600} td.watch{width:40%;color:var(--mut);font-size:12.5px}
+  td.src{width:20%;font-size:11.5px;color:var(--mut)} td.st{width:18%;white-space:nowrap}
+  .seg{display:inline-flex;border:1px solid var(--bd);border-radius:6px;overflow:hidden}
+  .seg button{font:inherit;font-size:11.5px;padding:2px 7px;border:0;background:transparent;color:var(--mut);cursor:pointer;border-right:1px solid var(--bd)}
+  .seg button:last-child{border-right:0}
+  .seg button.on[data-v="ok"]{background:var(--ok);color:#fff}
+  .seg button.on[data-v="warn"]{background:var(--warn);color:#fff}
+  .seg button.on[data-v="bad"]{background:var(--bad);color:#fff}
+  .kw{display:inline-block;background:var(--bad);color:#fff;border-radius:4px;font-size:10.5px;padding:0 6px;margin-right:6px;vertical-align:1px}
+  .srcname{display:inline-block;border:1px solid var(--bd);border-radius:4px;font-size:10.5px;padding:0 5px;margin-left:6px;color:var(--mut)}
+  ul.news{margin:4px 0 0;padding-left:16px}
+  ul.news li{margin-bottom:4px}
+  ul.news a{color:var(--ac);text-decoration:none}
+  ul.news a:hover{text-decoration:underline}
+  .bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
+  .bar button{font:inherit;font-size:12.5px;padding:4px 12px;border:1px solid var(--bd);border-radius:6px;background:transparent;color:var(--fg);cursor:pointer}
+  .bar button:hover{border-color:var(--ac);color:var(--ac)}
+  .chip{display:inline-block;border:1px solid var(--bd);border-radius:999px;padding:1px 9px;margin-right:6px;font-size:12px}
+  details{margin-top:6px}
+  details summary{cursor:pointer;color:var(--mut);font-size:12.5px}
+  /* 來源勾選面板 */
+  .srcgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:3px 14px;margin-top:5px}
+  .srcgrid label{display:flex;align-items:center;gap:6px;font-size:12.5px;cursor:pointer;
+                 padding:1px 4px;border-radius:5px}
+  .srcgrid label:hover{background:rgba(127,127,127,.10)}
+  .srcgrid input{width:14px;height:14px;flex:none;accent-color:var(--ac)}
+  .srcgrid .n{color:var(--mut);font-size:11px;margin-left:auto}
+  .srcdim{opacity:.45}
+  .cathead{display:flex;align-items:center;gap:8px;margin-top:9px}
+  .cathead b{font-size:12.5px}
+  .cathead button{font:inherit;font-size:11px;padding:1px 8px;border:1px solid var(--bd);
+                  border-radius:5px;background:transparent;color:var(--mut);cursor:pointer}
+  @media print{
+    .seg,.bar,.srcgrid input,details summary,.cathead button{display:none}
+    body{font-size:10.5px}
+    .panel{border-color:#999}
+    details[open] summary{display:block}
+    a{color:#000;text-decoration:none}
+    .srcgrid{grid-template-columns:repeat(3,1fr)}
+    @page{size:A4 portrait;margin:11mm}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>台海風險指標追蹤表 <span class="m">（多來源・可自選）</span></h1>
+  <div class="sub">資料更新：<b id="ts">—</b>　·　<span id="srcline">—</span></div>
+
+  <div class="bar">
+    <button onclick="location.reload()">重新載入</button>
+    <button onclick="window.print()">列印 / 存成 PDF</button>
+    <button onclick="resetInd()">重設人工指標</button>
+  </div>
+
+  <!-- ===== 來源勾選 ===== -->
+  <h2>一、選擇來源（勾選後，下方所有數字即時重算）</h2>
+  <div class="panel">
+    <div class="bar" style="margin:0 0 4px">
+      <button onclick="allSrc(true)">全選</button>
+      <button onclick="allSrc(false)">全不選</button>
+      <button onclick="onlyCat('國際通訊社')">只看通訊社</button>
+      <button onclick="onlyCat('台灣')">只看台灣媒體</button>
+      <button onclick="onlyCat('__all__')">全部</button>
+      <span class="m" id="chkinfo"></span>
+    </div>
+    <div id="srcpanel"></div>
+    <div class="m" style="margin-top:6px">已勾選的來源才會計入下方的嚴重度佔比與清單。沒抓到資料的來源會標灰。</div>
+  </div>
+
+  <!-- ===== 風險面板 ===== -->
+  <h2>二、風險讀數（依你勾選的來源）</h2>
+  <div class="panel">
+    <div class="row">
+      <div><div class="m">嚴重度佔比（%）<br><span style="font-size:10.5px">＝(警示×3＋注意×1)÷(3×總數)</span></div><div class="big" id="heat">—</div></div>
+      <div><div class="m">判讀層級</div><div class="big" id="level" style="font-size:19px">—</div></div>
+      <div><div class="m">納入報導數</div><div class="big" id="n">—</div></div>
+      <div><div class="m">納入來源數</div><div class="big" id="nsrc">—</div></div>
+    </div>
+    <div style="margin-top:8px" id="chips"></div>
+  </div>
+
+  <h2>三、即時訊號</h2>
+  <div class="panel">
+    <div style="font-weight:700">⚠ 高階訊號（封鎖／入侵／制裁／撤僑／動員…）</div>
+    <div id="hi"></div>
+  </div>
+  <div class="panel">
+    <div style="font-weight:700">● 中階訊號（軍演／擾台／海警／灰色地帶…）</div>
+    <div id="mid"></div>
+  </div>
+  <details><summary>展開：納入統計的全部報導</summary><div id="all" class="panel"></div></details>
+
+  <h2>四、人工判讀指標（可勾選，自動存檔）</h2>
+  <div id="groups"></div>
+
+  <h2>五、趨勢（每次更新的佔比）</h2>
+  <div class="panel"><div id="hist" class="m"></div></div>
+
+  <h2>六、方法與限制（重要）</h2>
+  <div class="panel m">
+    這張表的數字是<b>關鍵詞頻率指標</b>：把各來源的近期報導抓來，依「封鎖／入侵／制裁…」等字詞分級加權後換算。<br>
+    「嚴重度佔比」＝(警示×3＋注意×1)÷(3×報導總數)，<b>刻意做成與抓取量無關</b>——否則光是多抓幾則，數字就會自己升高（本表調校時就發生過：只改查詢式，佔比從 14 變 47，世界什麼都沒發生）。<br>
+    <b>勾選來源會直接改變分母</b>：只勾一家媒體時，它的用語習慣就等於全部，數字會很跳。要跨日比較，請固定同一組來源。<br>
+    它衡量的是<b>「這些媒體最近的用語有多強烈」</b>，<b>不是</b>攻擊機率、<b>不是</b>情報評估，也無法預測未來。<br>
+    標題含同一字詞但語意不同（例如「學者稱封鎖比登陸更可能」）也會被計分；紅色標籤標出命中的字詞，讓你自己判斷合不合理。<br>
+    部分媒體（Reuters/AP/FT/Economist 等）沒有公開 RSS，是經 Google News 取得標題；連結會先導到 Google 再轉原站，且部分有付費牆。抓取失敗的來源會標灰並排除。
+  </div>
+
+  <h2>七、來源一覽</h2>
+  <div class="panel m" id="srclinks"></div>
+
+  <div class="m" style="margin-top:10px">本表為公開資訊整理的觀察工具，不構成預測或任何政治立場。指標狀態由使用者自行判定。</div>
+</div>
+
+<script>
+const DATA = /*__DATA__*/;
+const SRCMAP = {}; (DATA.sources||[]).forEach(s=>SRCMAP[s.id]=s);
+let chk = {};
+
+/* ---------- 來源勾選 ---------- */
+function loadChk(){
+  let o=null; try{o=JSON.parse(localStorage.getItem("twrisk_chk_v1")||"null")}catch(e){}
+  (DATA.sources||[]).forEach(s=>chk[s.id] = (o && o[s.id]!==undefined) ? o[s.id] : true);
+}
+function saveChk(){try{localStorage.setItem("twrisk_chk_v1",JSON.stringify(chk))}catch(e){}}
+function allSrc(v){ (DATA.sources||[]).forEach(s=>chk[s.id]=v); saveChk(); renderAll(); }
+function onlyCat(cat){
+  (DATA.sources||[]).forEach(s=>chk[s.id] = (cat==="__all__") ? true : (s.cat===cat));
+  saveChk(); renderAll();
+}
+function renderSrc(){
+  const host=document.getElementById("srcpanel"); host.innerHTML="";
+  const cats=[]; (DATA.sources||[]).forEach(s=>{ if(cats.indexOf(s.cat)<0) cats.push(s.cat); });
+  cats.forEach(cat=>{
+    const items=(DATA.sources||[]).filter(s=>s.cat===cat);
+    const head=document.createElement("div"); head.className="cathead";
+    head.innerHTML='<b>'+cat+'</b>';
+    const b=document.createElement("button");
+    b.textContent="切換"; b.onclick=()=>{ const allOn=items.every(s=>chk[s.id]);
+      items.forEach(s=>chk[s.id]=!allOn); saveChk(); renderAll(); };
+    head.appendChild(b); host.appendChild(head);
+    const g=document.createElement("div"); g.className="srcgrid";
+    items.forEach(s=>{
+      const l=document.createElement("label");
+      if(!s.ok) l.className="srcdim";
+      l.innerHTML='<input type="checkbox" data-sid="'+s.id+'"'+(chk[s.id]?" checked":"")+'>'+
+                  '<span>'+s.name+'</span><span class="n">'+(s.ok? s.n : '失敗')+'</span>';
+      g.appendChild(l);
+    });
+    host.appendChild(g);
+  });
+  host.querySelectorAll("input[data-sid]").forEach(cb=>{
+    cb.onchange=()=>{ chk[cb.dataset.sid]=cb.checked; saveChk(); renderAll(); };
+  });
+  const on=(DATA.sources||[]).filter(s=>chk[s.id]).length;
+  const okon=(DATA.sources||[]).filter(s=>chk[s.id]&&s.ok).length;
+  document.getElementById("chkinfo").textContent =
+    "已勾選 "+on+" / "+(DATA.sources||[]).length+" 家（其中有資料 "+okon+" 家）";
+}
+
+/* ---------- 計算 ---------- */
+function picked(){ return (DATA.arts||[]).filter(a=>chk[a.s]); }
+function calc(){
+  const A=picked();
+  const hi=A.filter(a=>a.k==="警示").length, mid=A.filter(a=>a.k==="注意").length,
+        cal=A.filter(a=>a.k==="緩和").length, N=A.length;
+  const heat=Math.round(100*(hi*3+mid)/(3*Math.max(1,N)));
+  let level,col;
+  if (hi>=8 && heat>=20)      { level="高";       col="var(--bad)";  }
+  else if (hi>=4 && heat>=12) { level="升高";     col="var(--warn)"; }
+  else if (hi>=1 || heat>=6)  { level="注意";     col="var(--warn)"; }
+  else                        { level="相對平穩"; col="var(--ok)";   }
+  return {A,hi,mid,cal,N,heat,level,col};
+}
+
+/* ---------- 清單 ---------- */
+function li(a){
+  const kw = a.w ? '<span class="kw">命中「'+a.w+'」</span>' : '';
+  const sn = '<span class="srcname">'+((SRCMAP[a.s]||{}).name||a.s)+'</span>';
+  const t  = (a.t||'').replace(/</g,'&lt;');
+  return '<li>'+kw+'<a href="'+(a.l||'#').replace(/"/g,'%22')+'" target="_blank" rel="noopener">'+t+'</a>'+sn+
+         ' <span class="m">'+(a.p||'')+'</span></li>';
+}
+function list(items, empty, cap){
+  if(!items.length) return '<div class="m">'+empty+'</div>';
+  return '<ul class="news">'+items.slice(0,cap||20).map(li).join("")+'</ul>';
+}
+
+/* ---------- 人工指標 ---------- */
+const IND = [
+ {g:"軍事", items:[
+  {id:"m1",ind:"兩棲／後勤動員",watch:"登陸艦與民用滾裝船徵用公告、兩棲部隊跨區集結、演習後兵力未回撤",src:"解放軍動態",def:"warn"},
+  {id:"m2",ind:"演習性質：演→備",watch:"由「演練」轉為「部署」：彈藥前推、醫療與血庫動員、動員令徵候",src:"戰區公告",def:"warn"},
+  {id:"m3",ind:"海空擾台頻次與縱深",watch:"越中線架次、進入我領空、臨時禁航／封控區公告範圍與時長",src:"國防部動態",def:"warn"},
+  {id:"m4",ind:"海警「執法」範圍",watch:"是否擴大到台灣港口航線、對商船登船檢查、實質檢疫措施",src:"海警／航運通告",def:"warn"},
+  {id:"m5",ind:"網路與基礎設施攻擊",watch:"對政府、能源、金融、交通的攻擊由「騷擾」升級為「致癱」",src:"資安通報",def:"ok"}]},
+ {g:"經濟／金融", items:[
+  {id:"e1",ind:"對台經濟制裁／貿易中斷",watch:"具體公告：中止 ECFA 項目、禁運、限制台灣船舶",src:"商務部公告",def:"warn"},
+  {id:"e2",ind:"能源與糧食存量",watch:"天然氣存量天數、煤／油存量、糧食自給天數（封鎖下的續航力）",src:"經濟部／台電",def:"warn"},
+  {id:"e3",ind:"風險定價（市場）",watch:"航運保費、台灣主權 CDS、外資撤離、半導體產能外移速度",src:"市場數據",def:"warn"},
+  {id:"e4",ind:"外國撤僑準備",watch:"旅遊警示升級、撤僑預案、非必要人員撤離",src:"各國領事公告",def:"ok"}]},
+ {g:"政治／國際", items:[
+  {id:"p1",ind:"台灣政治走向",watch:"是否推動法理獨立／正名修憲等「不可逆」動作",src:"立法院／官方",def:"ok"},
+  {id:"p2",ind:"外國軍事存在",watch:"駐訓、顧問、聯合演訓是否由「輪替」變「常駐」",src:"國防部／外媒",def:"warn"},
+  {id:"p3",ind:"美中軍事溝通管道",watch:"熱線、軍事對話是否中斷（中斷＝誤判風險上升）",src:"雙方國防部",def:"warn"},
+  {id:"p4",ind:"北京對台論述語氣",watch:"官方用語是否從「反對」升級為「必須」；新法律與人事安排",src:"官方媒體",def:"warn"}]}
+];
+const V={ok:{t:"正常"},warn:{t:"注意"},bad:{t:"警示"}};
+let state={};
+function loadInd(){
+  let s=null; try{s=JSON.parse(localStorage.getItem("twrisk_ind_v3")||"null")}catch(e){}
+  IND.forEach(g=>g.items.forEach(it=>state[it.id]=(s&&s[it.id])?s[it.id]:it.def));
+}
+function saveInd(){try{localStorage.setItem("twrisk_ind_v3",JSON.stringify(state))}catch(e){}}
+function renderInd(){
+  const host=document.getElementById("groups"); host.innerHTML="";
+  IND.forEach(g=>{
+    const h=document.createElement("h2"); h.textContent=g.g; h.style.fontSize="12.5px"; host.appendChild(h);
+    const t=document.createElement("table");
+    t.innerHTML="<thead><tr><th>指標</th><th>觀察重點（可檢驗）</th><th>出處</th><th>狀態</th></tr></thead>";
+    const tb=document.createElement("tbody");
+    g.items.forEach(it=>{
+      const tr=document.createElement("tr");
+      tr.innerHTML='<td class="ind">'+it.ind+'</td><td class="watch">'+it.watch+'</td><td class="src">'+it.src+
+        '</td><td class="st"><span class="seg">'+["ok","warn","bad"].map(v=>
+        '<button data-v="'+v+'" data-id="'+it.id+'"'+(state[it.id]===v?' class="on"':'')+'>'+V[v].t+'</button>').join("")+'</span></td>';
+      tb.appendChild(tr);
+    });
+    t.appendChild(tb); host.appendChild(t);
+  });
+  host.querySelectorAll("button[data-id]").forEach(b=>{b.onclick=()=>{state[b.dataset.id]=b.dataset.v;saveInd();renderInd();}});
+}
+function resetInd(){IND.forEach(g=>g.items.forEach(it=>state[it.id]=it.def));saveInd();renderInd();}
+
+/* ---------- 主渲染 ---------- */
+function renderAll(){
+  renderSrc();
+  const r=calc();
+  document.getElementById("heat").textContent=r.heat;
+  const lv=document.getElementById("level"); lv.textContent=r.level; lv.style.color=r.col;
+  document.getElementById("n").textContent=r.N;
+  document.getElementById("nsrc").textContent=(DATA.sources||[]).filter(s=>chk[s.id]&&s.ok).length;
+  document.getElementById("chips").innerHTML =
+    '<span class="chip">警示 '+r.hi+'</span><span class="chip">注意 '+r.mid+'</span><span class="chip">緩和 '+r.cal+'</span>'+
+    '<span class="chip">其他 '+(r.N-r.hi-r.mid-r.cal)+'</span>';
+  document.getElementById("hi").innerHTML  = list(r.A.filter(a=>a.k==="警示"), "近期沒有命中高階關鍵詞的報導。", 25);
+  document.getElementById("mid").innerHTML = list(r.A.filter(a=>a.k==="注意"), "近期沒有中等強度訊號。", 25);
+  document.getElementById("all").innerHTML = list(r.A, "沒有資料。", 400);
+}
+
+/* ---------- 一次性填寫 ---------- */
+function fillStatic(){
+  document.getElementById("ts").textContent = DATA.ts;
+  const ok=(DATA.sources||[]).filter(s=>s.ok).length;
+  document.getElementById("srcline").textContent =
+    "來源 "+(DATA.sources||[]).length+" 家（成功 "+ok+" 家）　·　報導 "+(DATA.arts||[]).length+" 則";
+  const h=DATA.hist||[];
+  document.getElementById("hist").innerHTML = h.length
+    ? h.map(x=>x.ts+"　佔比 "+x.heat+"%　("+x.level+"．"+x.n+" 則．來源 "+x.src_ok+"/"+x.src_all+")").join("<br>")
+    : "尚無歷史資料。";
+  document.getElementById("srclinks").innerHTML = (DATA.sources||[]).map(s=>
+    '<a href="'+s.url+'" target="_blank" rel="noopener">'+s.name+'</a>'+(s.ok?'':'<span class="m">(失敗)</span>')
+  ).join("　·　") + ((DATA.errors&&DATA.errors.length)? '<div style="margin-top:6px">抓取警告：'+
+    DATA.errors.join('；').replace(/</g,'&lt;')+'</div>' : '');
+}
+
+loadChk(); loadInd(); renderInd(); fillStatic(); renderAll();
+</script>
+</body>
+</html>
