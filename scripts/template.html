@@ -2,292 +2,444 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8">
-<title>台海風險指標追蹤表（多來源・可自選來源）</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>台海風險指標追蹤表</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --fg: var(--foreground, #1b1b1e); --mut: var(--muted-foreground, #6b6b70);
-    --bd: var(--border, #d8d8dc); --cd: var(--card, #f6f6f7); --ac: var(--accent, #2f6fd0);
-    --ok:#1f8a4c; --warn:#c98a10; --bad:#c0392b;
+    --bg:#ffffff; --ink:#171717; --ink2:#4d4d4d; --ink3:#808080;
+    --line:rgba(0,0,0,.08); --line2:#ebebeb; --surf:#fafafa; --surf2:#f4f4f5;
+    --accent:#0072f5;
+    --hi:#d92d20; --mid:#b25e09; --lo:#157f3d;      /* 飽和色只給嚴重度 */
+    --r-pill:9999px;
   }
   *{box-sizing:border-box}
-  body{font-family:"Microsoft JhengHei","PingFang TC","Noto Sans TC",system-ui,sans-serif;
-       color:var(--fg);font-size:13.5px;line-height:1.6;margin:0}
-  .wrap{max-width:940px}
-  h1{font-size:19px;margin:0 0 2px}
-  .sub{color:var(--mut);font-size:12px}
-  .m{color:var(--mut);font-size:11.5px}
-  .panel{border:1px solid var(--bd);border-radius:8px;padding:10px 12px;margin:10px 0;background:var(--cd)}
-  .big{font-size:26px;font-weight:800;line-height:1.1}
-  .row{display:flex;gap:22px;flex-wrap:wrap;align-items:baseline}
-  h2{font-size:13.5px;margin:18px 0 6px;padding-left:8px;border-left:3px solid var(--ac)}
-  table{width:100%;border-collapse:collapse}
-  th,td{border:1px solid var(--bd);padding:6px 8px;vertical-align:top;text-align:left}
-  th{background:var(--cd);font-size:12.5px}
-  td.ind{width:22%;font-weight:600} td.watch{width:40%;color:var(--mut);font-size:12.5px}
-  td.src{width:20%;font-size:11.5px;color:var(--mut)} td.st{width:18%;white-space:nowrap}
-  .seg{display:inline-flex;border:1px solid var(--bd);border-radius:6px;overflow:hidden}
-  .seg button{font:inherit;font-size:11.5px;padding:2px 7px;border:0;background:transparent;color:var(--mut);cursor:pointer;border-right:1px solid var(--bd)}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:'Geist','Noto Sans TC','Microsoft JhengHei','PingFang TC',system-ui,-apple-system,sans-serif;
+    font-size:15px; line-height:1.6; font-feature-settings:"liga";
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:'Geist Mono',ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 24px 72px}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  /* ---------- header ---------- */
+  header.top{
+    position:sticky;top:0;z-index:20;background:rgba(255,255,255,.88);
+    -webkit-backdrop-filter:saturate(180%) blur(12px);backdrop-filter:saturate(180%) blur(12px);
+    box-shadow:0 1px 0 0 var(--line);
+  }
+  .topin{max-width:1080px;margin:0 auto;padding:11px 24px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+  .brand{font-size:15px;font-weight:600;letter-spacing:-.02em}
+  .tag{font-size:10.5px;font-weight:500;text-transform:uppercase;letter-spacing:.08em;
+       color:var(--ink3);border:1px solid var(--line2);border-radius:var(--r-pill);padding:1px 8px}
+  .topmeta{margin-left:auto;display:flex;align-items:center;gap:14px;font-size:12px;color:var(--ink2)}
+  .btn{
+    font:inherit;font-size:12.5px;font-weight:500;color:var(--ink);background:#fff;cursor:pointer;
+    padding:5px 12px;border:0;border-radius:6px;
+    box-shadow:0 0 0 1px var(--line),0 1px 1px rgba(0,0,0,.03);
+  }
+  .btn:hover{box-shadow:0 0 0 1px rgba(0,0,0,.22),0 1px 1px rgba(0,0,0,.03)}
+  .btn.on{background:var(--ink);color:#fff;box-shadow:none}
+
+  /* ---------- KPI ---------- */
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin:20px 0 6px;
+        box-shadow:0 0 0 1px var(--line);border-radius:10px;overflow:hidden;background:#fff}
+  .kpi{padding:14px 16px;border-right:1px solid var(--line2)}
+  .kpi:last-child{border-right:0}
+  .kpi .k{font-family:'Geist Mono',monospace;font-size:10.5px;font-weight:500;
+          text-transform:uppercase;letter-spacing:.08em;color:var(--ink3)}
+  .kpi .v{font-family:'Geist Mono',monospace;font-size:26px;font-weight:600;
+          letter-spacing:-.03em;line-height:1.15;margin-top:2px}
+  .kpi .s{font-size:11.5px;color:var(--ink3)}
+  .lvl{font-size:17px !important;font-weight:600;letter-spacing:0}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+  .chip{font-family:'Geist Mono',monospace;font-size:11.5px;padding:2px 9px;border-radius:var(--r-pill);
+        box-shadow:0 0 0 1px var(--line2);color:var(--ink2)}
+  .chip b{font-weight:600;color:var(--ink)}
+
+  /* ---------- 來源篩選 ---------- */
+  h2{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);
+     margin:32px 0 10px;font-family:'Geist Mono',monospace}
+  .filters{box-shadow:0 0 0 1px var(--line);border-radius:10px;padding:12px 14px;background:#fff}
+  .frow{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .frow .sep{width:1px;height:18px;background:var(--line2);margin:0 4px}
+  .srcgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(196px,1fr));gap:5px;margin-top:11px}
+  .src{display:flex;align-items:center;gap:7px;cursor:pointer;padding:3px 6px;border-radius:6px;
+       font-size:12.5px;user-select:none}
+  .src:hover{background:var(--surf2)}
+  .src input{appearance:none;width:14px;height:14px;border-radius:4px;flex:none;margin:0;cursor:pointer;
+             box-shadow:0 0 0 1px rgba(0,0,0,.25) inset;background:#fff;position:relative}
+  .src input:checked{background:var(--ink);box-shadow:none}
+  .src input:checked::after{content:"";position:absolute;left:4.2px;top:1.4px;width:3.5px;height:7px;
+             border:solid #fff;border-width:0 1.6px 1.6px 0;transform:rotate(43deg)}
+  .src .n{margin-left:auto;font-family:'Geist Mono',monospace;font-size:11px;color:var(--ink3)}
+  .src.off{opacity:.42}
+  .cathead{display:flex;align-items:center;gap:8px;margin-top:11px}
+  .cathead .t{font-family:'Geist Mono',monospace;font-size:10.5px;text-transform:uppercase;
+              letter-spacing:.08em;color:var(--ink3)}
+  .cathead button{font:inherit;font-size:11px;color:var(--ink2);background:none;border:0;
+                  cursor:pointer;padding:0}
+  .cathead button:hover{color:var(--ink);text-decoration:underline}
+
+  /* ---------- 事件卡片 ---------- */
+  .evlist{display:flex;flex-direction:column;gap:8px}
+  .ev{box-shadow:0 0 0 1px var(--line);border-radius:10px;padding:13px 15px;background:#fff}
+  .ev:hover{box-shadow:0 0 0 1px rgba(0,0,0,.16)}
+  .evhead{display:flex;align-items:baseline;gap:9px;margin-bottom:3px}
+  .sev{display:inline-flex;align-items:center;gap:5px;flex:none;
+       font-family:'Geist Mono',monospace;font-size:10.5px;font-weight:500;
+       text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
+  .sev i{width:7px;height:7px;border-radius:50%;display:block}
+  .sev.hi{color:var(--hi)} .sev.hi i{background:var(--hi)}
+  .sev.mid{color:var(--mid)} .sev.mid i{background:var(--mid)}
+  .sev.lo{color:var(--lo)} .sev.lo i{background:var(--lo)}
+  .sev.gen{color:var(--ink3)} .sev.gen i{background:var(--ink3)}
+  .evmeta{margin-left:auto;flex:none;font-family:'Geist Mono',monospace;font-size:11px;color:var(--ink3)}
+  .evtitle{font-size:15.5px;font-weight:500;line-height:1.45;letter-spacing:-.01em}
+  .evtitle a{color:var(--ink)}
+  .evtitle a:hover{color:var(--accent);text-decoration:none}
+  .evsrc{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-top:7px}
+  .evsrc .names{font-family:'Geist Mono',monospace;font-size:11.5px;color:var(--ink2)}
+  .morebtn{font:inherit;font-size:11.5px;color:var(--ink3);background:none;border:0;cursor:pointer;
+           padding:0;font-family:'Geist Mono',monospace}
+  .morebtn:hover{color:var(--accent)}
+  .others{margin:9px 0 0;padding:9px 0 0;border-top:1px dashed var(--line2);display:none}
+  .others.open{display:block}
+  .others li{list-style:none;display:flex;gap:9px;align-items:baseline;padding:3px 0;font-size:13px}
+  .others ul{margin:0;padding:0}
+  .others .s{flex:none;font-family:'Geist Mono',monospace;font-size:10.5px;color:var(--ink3);
+             min-width:88px}
+  .others a{color:var(--ink2)}
+  .others a:hover{color:var(--accent)}
+  .empty{box-shadow:0 0 0 1px var(--line);border-radius:10px;padding:18px;color:var(--ink3);font-size:13px}
+
+  /* ---------- 樣式通用 ---------- */
+  .panel{box-shadow:0 0 0 1px var(--line);border-radius:10px;padding:14px 16px;background:#fff}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line2);vertical-align:top}
+  th{font-family:'Geist Mono',monospace;font-size:10.5px;text-transform:uppercase;
+     letter-spacing:.07em;color:var(--ink3);font-weight:500}
+  tr:last-child td{border-bottom:0}
+  .seg{display:inline-flex;box-shadow:0 0 0 1px var(--line);border-radius:6px;overflow:hidden}
+  .seg button{font:inherit;font-size:11.5px;padding:3px 9px;border:0;background:#fff;color:var(--ink3);
+              cursor:pointer;border-right:1px solid var(--line2)}
   .seg button:last-child{border-right:0}
-  .seg button.on[data-v="ok"]{background:var(--ok);color:#fff}
-  .seg button.on[data-v="warn"]{background:var(--warn);color:#fff}
-  .seg button.on[data-v="bad"]{background:var(--bad);color:#fff}
-  .kw{display:inline-block;background:var(--bad);color:#fff;border-radius:4px;font-size:10.5px;padding:0 6px;margin-right:6px;vertical-align:1px}
-  .srcname{display:inline-block;border:1px solid var(--bd);border-radius:4px;font-size:10.5px;padding:0 5px;margin-left:6px;color:var(--mut)}
-  ul.news{margin:4px 0 0;padding-left:16px}
-  ul.news li{margin-bottom:4px}
-  ul.news a{color:var(--ac);text-decoration:none}
-  ul.news a:hover{text-decoration:underline}
-  .bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
-  .bar button{font:inherit;font-size:12.5px;padding:4px 12px;border:1px solid var(--bd);border-radius:6px;background:transparent;color:var(--fg);cursor:pointer}
-  .bar button:hover{border-color:var(--ac);color:var(--ac)}
-  .chip{display:inline-block;border:1px solid var(--bd);border-radius:999px;padding:1px 9px;margin-right:6px;font-size:12px}
-  details{margin-top:6px}
-  details summary{cursor:pointer;color:var(--mut);font-size:12.5px}
-  /* 來源勾選面板 */
-  .srcgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:3px 14px;margin-top:5px}
-  .srcgrid label{display:flex;align-items:center;gap:6px;font-size:12.5px;cursor:pointer;
-                 padding:1px 4px;border-radius:5px}
-  .srcgrid label:hover{background:rgba(127,127,127,.10)}
-  .srcgrid input{width:14px;height:14px;flex:none;accent-color:var(--ac)}
-  .srcgrid .n{color:var(--mut);font-size:11px;margin-left:auto}
-  .srcdim{opacity:.45}
-  .cathead{display:flex;align-items:center;gap:8px;margin-top:9px}
-  .cathead b{font-size:12.5px}
-  .cathead button{font:inherit;font-size:11px;padding:1px 8px;border:1px solid var(--bd);
-                  border-radius:5px;background:transparent;color:var(--mut);cursor:pointer}
+  .seg button.on[data-v="ok"]{background:var(--lo);color:#fff}
+  .seg button.on[data-v="warn"]{background:var(--mid);color:#fff}
+  .seg button.on[data-v="bad"]{background:var(--hi);color:#fff}
+  .note{font-size:12.5px;color:var(--ink2);line-height:1.75}
+  details.gen{border-radius:10px;box-shadow:0 0 0 1px var(--line);padding:12px 15px;margin-top:8px}
+  details.gen summary{cursor:pointer;font-family:'Geist Mono',monospace;font-size:11.5px;color:var(--ink2)}
+  details.gen[open] summary{margin-bottom:10px}
+  footer{margin-top:34px;font-size:11.5px;color:var(--ink3);line-height:1.8}
+
+  @media (max-width:720px){
+    .kpis{grid-template-columns:repeat(2,1fr)}
+    .kpi:nth-child(2){border-right:0}
+    .kpi:nth-child(1),.kpi:nth-child(2){border-bottom:1px solid var(--line2)}
+    .wrap{padding:0 16px 56px} .topin{padding:10px 16px}
+    .others .s{min-width:0}
+  }
   @media print{
-    .seg,.bar,.srcgrid input,details summary,.cathead button{display:none}
-    body{font-size:10.5px}
-    .panel{border-color:#999}
-    details[open] summary{display:block}
+    header.top{position:static;-webkit-backdrop-filter:none;backdrop-filter:none}
+    .filters,input,.seg,.morebtn,.btn{display:none}
+    .others{display:block !important;border-top:0}
+    .ev,.panel,.kpis,.filters{box-shadow:0 0 0 1px #bbb}
+    body{font-size:10.5pt}
     a{color:#000;text-decoration:none}
-    .srcgrid{grid-template-columns:repeat(3,1fr)}
-    @page{size:A4 portrait;margin:11mm}
+    @page{size:A4 portrait;margin:12mm}
   }
 </style>
 </head>
 <body>
+
+<header class="top">
+  <div class="topin">
+    <span class="brand">台海風險指標追蹤表</span>
+    <span class="tag">Monitor</span>
+    <span class="topmeta">
+      <span class="mono" id="ts">—</span>
+      <button class="btn" onclick="window.print()">列印 / PDF</button>
+      <button class="btn" onclick="location.reload()">重新載入</button>
+    </span>
+  </div>
+</header>
+
 <div class="wrap">
 
-  <h1>台海風險指標追蹤表 <span class="m">（多來源・可自選）</span></h1>
-  <div class="sub">資料更新：<b id="ts">—</b>　·　<span id="srcline">—</span></div>
-
-  <div class="bar">
-    <button onclick="location.reload()">重新載入</button>
-    <button onclick="window.print()">列印 / 存成 PDF</button>
-    <button onclick="resetInd()">重設人工指標</button>
+  <div class="kpis">
+    <div class="kpi">
+      <div class="k">Severity Share</div>
+      <div class="v" id="heat">—</div>
+      <div class="s">事件嚴重度佔比（%）</div>
+    </div>
+    <div class="kpi">
+      <div class="k">Level</div>
+      <div class="v lvl" id="level">—</div>
+      <div class="s" id="levelnote">—</div>
+    </div>
+    <div class="kpi">
+      <div class="k">Events</div>
+      <div class="v" id="nev">—</div>
+      <div class="s" id="evnote">—</div>
+    </div>
+    <div class="kpi">
+      <div class="k">Sources</div>
+      <div class="v" id="nsrc">—</div>
+      <div class="s" id="srcnote">—</div>
+    </div>
   </div>
+  <div class="chips" id="chips"></div>
 
-  <!-- ===== 來源勾選 ===== -->
-  <h2>一、選擇來源（勾選後，下方所有數字即時重算）</h2>
-  <div class="panel">
-    <div class="bar" style="margin:0 0 4px">
-      <button onclick="allSrc(true)">全選</button>
-      <button onclick="allSrc(false)">全不選</button>
-      <button onclick="onlyCat('國際通訊社')">只看通訊社</button>
-      <button onclick="onlyCat('台灣')">只看台灣媒體</button>
-      <button onclick="onlyCat('__all__')">全部</button>
-      <span class="m" id="chkinfo"></span>
+  <h2>來源篩選 Sources</h2>
+  <div class="filters">
+    <div class="frow">
+      <button class="btn" onclick="allSrc(true)">全選</button>
+      <button class="btn" onclick="allSrc(false)">全不選</button>
+      <span class="sep"></span>
+      <button class="btn" onclick="onlyCat('國際通訊社')">通訊社</button>
+      <button class="btn" onclick="onlyCat('國際媒體')">國際媒體</button>
+      <button class="btn" onclick="onlyCat('亞洲')">亞洲</button>
+      <button class="btn" onclick="onlyCat('專業智庫')">智庫</button>
+      <button class="btn" onclick="onlyCat('台灣')">台灣</button>
+      <span class="sep"></span>
+      <span class="btn" style="cursor:default" id="chkinfo">—</span>
     </div>
     <div id="srcpanel"></div>
-    <div class="m" style="margin-top:6px">已勾選的來源才會計入下方的嚴重度佔比與清單。沒抓到資料的來源會標灰。</div>
   </div>
 
-  <!-- ===== 風險面板 ===== -->
-  <h2>二、風險讀數（依你勾選的來源）</h2>
-  <div class="panel">
-    <div class="row">
-      <div><div class="m">嚴重度佔比（%）<br><span style="font-size:10.5px">＝(警示×3＋注意×1)÷(3×總數)</span></div><div class="big" id="heat">—</div></div>
-      <div><div class="m">判讀層級</div><div class="big" id="level" style="font-size:19px">—</div></div>
-      <div><div class="m">納入報導數</div><div class="big" id="n">—</div></div>
-      <div><div class="m">納入來源數</div><div class="big" id="nsrc">—</div></div>
-    </div>
-    <div style="margin-top:8px" id="chips"></div>
-  </div>
+  <h2>事件流 Events <span style="text-transform:none;letter-spacing:0;font-family:inherit" id="evhint"></span></h2>
+  <div id="stream"></div>
+  <details class="gen" id="genwrap"><summary id="gensum">其他事件</summary><div id="genlist" class="evlist"></div></details>
 
-  <h2>三、即時訊號</h2>
-  <div class="panel">
-    <div style="font-weight:700">⚠ 高階訊號（封鎖／入侵／制裁／撤僑／動員…）</div>
-    <div id="hi"></div>
-  </div>
-  <div class="panel">
-    <div style="font-weight:700">● 中階訊號（軍演／擾台／海警／灰色地帶…）</div>
-    <div id="mid"></div>
-  </div>
-  <details><summary>展開：納入統計的全部報導</summary><div id="all" class="panel"></div></details>
-
-  <h2>四、人工判讀指標（可勾選，自動存檔）</h2>
+  <h2>人工判讀指標 Manual</h2>
   <div id="groups"></div>
 
-  <h2>五、趨勢（每次更新的佔比）</h2>
-  <div class="panel"><div id="hist" class="m"></div></div>
+  <h2>趨勢 Trend</h2>
+  <div class="panel note" id="hist"></div>
 
-  <h2>六、方法與限制（重要）</h2>
-  <div class="panel m">
-    這張表的數字是<b>關鍵詞頻率指標</b>：把各來源的近期報導抓來，依「封鎖／入侵／制裁…」等字詞分級加權後換算。<br>
-    「嚴重度佔比」＝(警示×3＋注意×1)÷(3×報導總數)，<b>刻意做成與抓取量無關</b>——否則光是多抓幾則，數字就會自己升高（本表調校時就發生過：只改查詢式，佔比從 14 變 47，世界什麼都沒發生）。<br>
-    <b>勾選來源會直接改變分母</b>：只勾一家媒體時，它的用語習慣就等於全部，數字會很跳。要跨日比較，請固定同一組來源。<br>
-    它衡量的是<b>「這些媒體最近的用語有多強烈」</b>，<b>不是</b>攻擊機率、<b>不是</b>情報評估，也無法預測未來。<br>
-    標題含同一字詞但語意不同（例如「學者稱封鎖比登陸更可能」）也會被計分；紅色標籤標出命中的字詞，讓你自己判斷合不合理。<br>
-    部分媒體（Reuters/AP/FT/Economist 等）沒有公開 RSS，是經 Google News 取得標題；連結會先導到 Google 再轉原站，且部分有付費牆。抓取失敗的來源會標灰並排除。
+  <h2>方法與限制 Method</h2>
+  <div class="panel note">
+    <b>1. 以「事件」計分，不是以「報導」計分。</b>同一件事常被十家媒體各寫一則標題，若逐則算，被廣泛報導的事件會把數字整個拉偏。
+    本表先把標題正規化（去掉「 - Reuters」這類來源後綴、去標點、轉小寫），再以「英文詞 + 中文雙字」為特徵算 Jaccard 相似度，
+    相似度 ≥ 0.40 的歸為同一事件，每件只算一次。<br>
+    <b>2. 嚴重度佔比＝(警示事件×3＋注意事件×1)÷(3×事件總數)</b>，與抓取量無關。勾選來源會改變分母，只勾一家時該家的用語習慣等於全部，數字會很跳；要跨日比較請固定同一組來源。<br>
+    <b>3. 這是關鍵詞指標，不是情報評估、也不是機率預測。</b>標題含同一詞但語意不同（例如「學者稱封鎖比登陸更可能」）也會被計分，所以卡片上直接標出命中的詞，讓你自己判斷合不合理。<br>
+    <b>4. 部分媒體（Reuters／AP／FT／The Economist 等）沒有公開 RSS</b>，標題經 Google News 取得，連結會先導到 Google 再轉原站，部分有付費牆。抓取失敗的來源會標灰並排除。
   </div>
 
-  <h2>七、來源一覽</h2>
-  <div class="panel m" id="srclinks"></div>
-
-  <div class="m" style="margin-top:10px">本表為公開資訊整理的觀察工具，不構成預測或任何政治立場。指標狀態由使用者自行判定。</div>
+  <footer>
+    <div id="srclinks"></div>
+    <div style="margin-top:8px">公開資訊整理工具，不構成預測或任何政治立場。人工指標狀態由使用者自行判定，存於本機瀏覽器。</div>
+  </footer>
 </div>
 
 <script>
 const DATA = /*__DATA__*/;
-const SRCMAP = {}; (DATA.sources||[]).forEach(s=>SRCMAP[s.id]=s);
-let chk = {};
+const SRC = {}; (DATA.sources||[]).forEach(s=>SRC[s.id]=s);
+const ARTS = DATA.arts||[];
+const RANK = {警示:3, 注意:2, 緩和:1, 一般:0};
+const SECLS = {警示:"hi", 注意:"mid", 緩和:"lo", 一般:"gen"};
+let chk = {}, ind = {};
 
-/* ---------- 來源勾選 ---------- */
+/* ------- 來源勾選 ------- */
 function loadChk(){
-  let o=null; try{o=JSON.parse(localStorage.getItem("twrisk_chk_v1")||"null")}catch(e){}
-  (DATA.sources||[]).forEach(s=>chk[s.id] = (o && o[s.id]!==undefined) ? o[s.id] : true);
+  let o=null; try{o=JSON.parse(localStorage.getItem("twr3_chk")||"null")}catch(e){}
+  (DATA.sources||[]).forEach(s=>chk[s.id]=(o&&o[s.id]!==undefined)?o[s.id]:true);
 }
-function saveChk(){try{localStorage.setItem("twrisk_chk_v1",JSON.stringify(chk))}catch(e){}}
-function allSrc(v){ (DATA.sources||[]).forEach(s=>chk[s.id]=v); saveChk(); renderAll(); }
-function onlyCat(cat){
-  (DATA.sources||[]).forEach(s=>chk[s.id] = (cat==="__all__") ? true : (s.cat===cat));
-  saveChk(); renderAll();
-}
+function saveChk(){try{localStorage.setItem("twr3_chk",JSON.stringify(chk))}catch(e){}}
+function allSrc(v){(DATA.sources||[]).forEach(s=>chk[s.id]=v);saveChk();renderAll();}
+function onlyCat(c){(DATA.sources||[]).forEach(s=>chk[s.id]=(s.cat===c));saveChk();renderAll();}
 function renderSrc(){
   const host=document.getElementById("srcpanel"); host.innerHTML="";
-  const cats=[]; (DATA.sources||[]).forEach(s=>{ if(cats.indexOf(s.cat)<0) cats.push(s.cat); });
+  const cats=[]; (DATA.sources||[]).forEach(s=>{if(cats.indexOf(s.cat)<0)cats.push(s.cat)});
   cats.forEach(cat=>{
     const items=(DATA.sources||[]).filter(s=>s.cat===cat);
-    const head=document.createElement("div"); head.className="cathead";
-    head.innerHTML='<b>'+cat+'</b>';
-    const b=document.createElement("button");
-    b.textContent="切換"; b.onclick=()=>{ const allOn=items.every(s=>chk[s.id]);
-      items.forEach(s=>chk[s.id]=!allOn); saveChk(); renderAll(); };
-    head.appendChild(b); host.appendChild(head);
+    const h=document.createElement("div"); h.className="cathead";
+    h.innerHTML='<span class="t">'+cat+'</span>';
+    const b=document.createElement("button"); b.type="button"; b.textContent="切換";
+    b.onclick=()=>{const all=items.every(s=>chk[s.id]); items.forEach(s=>chk[s.id]=!all); saveChk(); renderAll();};
+    h.appendChild(b); host.appendChild(h);
     const g=document.createElement("div"); g.className="srcgrid";
     items.forEach(s=>{
-      const l=document.createElement("label");
-      if(!s.ok) l.className="srcdim";
-      l.innerHTML='<input type="checkbox" data-sid="'+s.id+'"'+(chk[s.id]?" checked":"")+'>'+
-                  '<span>'+s.name+'</span><span class="n">'+(s.ok? s.n : '失敗')+'</span>';
-      g.appendChild(l);
+      const l=document.createElement("label"); l.className="src"+(s.ok?"":" off");
+      const cb=document.createElement("input"); cb.type="checkbox"; cb.checked=!!chk[s.id];
+      cb.onchange=()=>{chk[s.id]=cb.checked;saveChk();renderAll();};
+      const nm=document.createElement("span"); nm.textContent=s.name;
+      const n=document.createElement("span"); n.className="n"; n.textContent=s.ok?s.n:"失敗";
+      l.appendChild(cb); l.appendChild(nm); l.appendChild(n); g.appendChild(l);
     });
     host.appendChild(g);
   });
-  host.querySelectorAll("input[data-sid]").forEach(cb=>{
-    cb.onchange=()=>{ chk[cb.dataset.sid]=cb.checked; saveChk(); renderAll(); };
-  });
   const on=(DATA.sources||[]).filter(s=>chk[s.id]).length;
   const okon=(DATA.sources||[]).filter(s=>chk[s.id]&&s.ok).length;
-  document.getElementById("chkinfo").textContent =
-    "已勾選 "+on+" / "+(DATA.sources||[]).length+" 家（其中有資料 "+okon+" 家）";
+  document.getElementById("chkinfo").textContent="已選 "+on+" / "+(DATA.sources||[]).length+
+    "（有資料 "+okon+"）";
 }
 
-/* ---------- 計算 ---------- */
-function picked(){ return (DATA.arts||[]).filter(a=>chk[a.s]); }
-function calc(){
-  const A=picked();
-  const hi=A.filter(a=>a.k==="警示").length, mid=A.filter(a=>a.k==="注意").length,
-        cal=A.filter(a=>a.k==="緩和").length, N=A.length;
-  const heat=Math.round(100*(hi*3+mid)/(3*Math.max(1,N)));
+/* ------- 事件計算：以勾選來源的成員重算層級 ------- */
+function liveEvents(){
+  const out=[];
+  (DATA.events||[]).forEach(e=>{
+    const ms=e.members.map(i=>ARTS[i]).filter(a=>a&&chk[a.s]);
+    if(!ms.length) return;
+    let tier="一般", kw="";
+    ms.forEach(a=>{ if(RANK[a.k]>RANK[tier]){tier=a.k;kw=a.w;} });
+    if(!kw) kw=(ms.find(a=>a.k===tier)||{}).w||"";
+    out.push({rep:e.rep, repLink:e.repLink, tier, kw, nsrcs:new Set(ms.map(a=>a.s)).size,
+              srcs:[...new Set(ms.map(a=>a.s))], others:ms, p:e.p});
+  });
+  return out;
+}
+function metrics(evs){
+  const n=evs.length;
+  const hi=evs.filter(e=>e.tier==="警示").length;
+  const mid=evs.filter(e=>e.tier==="注意").length;
+  const lo=evs.filter(e=>e.tier==="緩和").length;
+  const heat=Math.round(100*(hi*3+mid)/(3*Math.max(1,n)));
   let level,col;
-  if (hi>=8 && heat>=20)      { level="高";       col="var(--bad)";  }
-  else if (hi>=4 && heat>=12) { level="升高";     col="var(--warn)"; }
-  else if (hi>=1 || heat>=6)  { level="注意";     col="var(--warn)"; }
-  else                        { level="相對平穩"; col="var(--ok)";   }
-  return {A,hi,mid,cal,N,heat,level,col};
+  if(hi>=8&&heat>=20){level="高";col="var(--hi)";}
+  else if(hi>=4&&heat>=12){level="升高";col="var(--mid)";}
+  else if(hi>=1||heat>=6){level="注意";col="var(--mid)";}
+  else{level="相對平穩";col="var(--lo)";}
+  return {n,hi,mid,lo,gen:n-hi-mid-lo,heat,level,col};
 }
 
-/* ---------- 清單 ---------- */
-function li(a){
-  const kw = a.w ? '<span class="kw">命中「'+a.w+'」</span>' : '';
-  const sn = '<span class="srcname">'+((SRCMAP[a.s]||{}).name||a.s)+'</span>';
-  const t  = (a.t||'').replace(/</g,'&lt;');
-  return '<li>'+kw+'<a href="'+(a.l||'#').replace(/"/g,'%22')+'" target="_blank" rel="noopener">'+t+'</a>'+sn+
-         ' <span class="m">'+(a.p||'')+'</span></li>';
+/* ------- 事件卡片 ------- */
+const esc=s=>String(s==null?"":s).replace(/[<>&"]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;"}[c]));
+function card(e,idx){
+  const sev=SECLS[e.tier]||"gen";
+  const kw=e.kw?' · '+esc(e.kw):'';
+  const extra=e.others.length-1;              // 同一事件的其他版本
+  const multi=e.nsrcs>1;                      // 是否多家來源
+  const pdate=(e.p||"").replace(/^[A-Za-z]{3},\s*/,"").slice(0,11);
+  const others=e.others.slice(1,26);
+  const list=others.map(a=>
+    '<li><span class="s">'+esc((SRC[a.s]||{}).name||a.s)+'</span>'+
+    '<a href="'+esc(a.l||"#")+'" target="_blank" rel="noopener">'+esc(a.t)+'</a></li>').join("");
+  const row=(multi||extra>0)
+    ? '<div class="evsrc">'+
+        (multi?'<span class="names">'+e.srcs.map(s=>esc((SRC[s]||{}).name||s)).join(' · ')+'</span>':'')+
+        (extra>0?'<button class="btn morebtn" data-lbl="▾ 其他 '+extra+' 則版本" onclick="tog(this,'+idx+')">▾ 其他 '+extra+' 則版本</button>':'')+
+      '</div>'
+    : '';                                      // 單一來源、單一版本 → 不重複顯示來源
+  return '<article class="ev">'+
+    '<div class="evhead">'+
+      '<span class="sev '+sev+'"><i></i>'+esc(e.tier)+kw+'</span>'+
+      '<span class="evmeta">'+(multi?e.nsrcs+' 家':pdate)+'</span>'+
+    '</div>'+
+    '<div class="evtitle"><a href="'+esc(e.repLink||"#")+'" target="_blank" rel="noopener">'+esc(e.rep)+'</a></div>'+
+    row+
+    (extra>0?'<div class="others" id="o'+idx+'"><ul>'+list+'</ul></div>':'')+
+  '</article>';
 }
-function list(items, empty, cap){
-  if(!items.length) return '<div class="m">'+empty+'</div>';
-  return '<ul class="news">'+items.slice(0,cap||20).map(li).join("")+'</ul>';
+function tog(btn,idx){
+  const d=document.getElementById("o"+idx); if(!d)return;
+  const open=d.classList.toggle("open");
+  btn.textContent=open?"▴ 收合":(btn.dataset.lbl||"▾ 其他版本");
 }
 
-/* ---------- 人工指標 ---------- */
-const IND = [
- {g:"軍事", items:[
+/* ------- 主渲染 ------- */
+function renderAll(){
+  renderSrc();
+  const evs=liveEvents();
+  const m=metrics(evs);
+  document.getElementById("heat").textContent=m.heat+"%";
+  const lv=document.getElementById("level"); lv.textContent=m.level; lv.style.color=m.col;
+  document.getElementById("levelnote").textContent="警示 "+m.hi+"｜注意 "+m.mid;
+  document.getElementById("nev").textContent=m.n;
+  document.getElementById("evnote").textContent="聚合自 "+ARTS.filter(a=>chk[a.s]).length+" 則報導";
+  const okon=(DATA.sources||[]).filter(s=>chk[s.id]&&s.ok).length;
+  document.getElementById("nsrc").textContent=okon+"/"+(DATA.sources||[]).length;
+  document.getElementById("srcnote").textContent="已納入的來源";
+  document.getElementById("chips").innerHTML=
+    '<span class="chip">警示 <b>'+m.hi+'</b></span>'+
+    '<span class="chip">注意 <b>'+m.mid+'</b></span>'+
+    '<span class="chip">緩和 <b>'+m.lo+'</b></span>'+
+    '<span class="chip">一般 <b>'+m.gen+'</b></span>';
+
+  const order={警示:0,注意:1,緩和:2,一般:3};
+  evs.sort((a,b)=>order[a.tier]-order[b.tier]||b.nsrcs-a.nsrcs||(a.p<b.p?1:-1));
+  const main=evs.filter(e=>e.tier!=="一般");
+  const gen=evs.filter(e=>e.tier==="一般");
+  document.getElementById("stream").innerHTML = main.length
+    ? main.map((e,i)=>card(e,i)).join("")
+    : '<div class="empty">目前勾選的來源中，沒有命中警示／注意／緩和關鍵詞的事件。</div>';
+  document.getElementById("genlist").innerHTML = gen.map((e,i)=>card(e,900+i)).join("");
+  document.getElementById("gensum").textContent="其他 "+gen.length+" 個事件（未命中關鍵詞）";
+  document.getElementById("genwrap").style.display = gen.length? "block":"none";
+  document.getElementById("evhint").textContent="　"+main.length+" 件";
+}
+
+/* ------- 人工指標 ------- */
+const IND=[
+ {g:"軍事",items:[
   {id:"m1",ind:"兩棲／後勤動員",watch:"登陸艦與民用滾裝船徵用公告、兩棲部隊跨區集結、演習後兵力未回撤",src:"解放軍動態",def:"warn"},
   {id:"m2",ind:"演習性質：演→備",watch:"由「演練」轉為「部署」：彈藥前推、醫療與血庫動員、動員令徵候",src:"戰區公告",def:"warn"},
-  {id:"m3",ind:"海空擾台頻次與縱深",watch:"越中線架次、進入我領空、臨時禁航／封控區公告範圍與時長",src:"國防部動態",def:"warn"},
-  {id:"m4",ind:"海警「執法」範圍",watch:"是否擴大到台灣港口航線、對商船登船檢查、實質檢疫措施",src:"海警／航運通告",def:"warn"},
-  {id:"m5",ind:"網路與基礎設施攻擊",watch:"對政府、能源、金融、交通的攻擊由「騷擾」升級為「致癱」",src:"資安通報",def:"ok"}]},
- {g:"經濟／金融", items:[
+  {id:"m3",ind:"海空擾台頻次與縱深",watch:"越中線架次、進入我領空、臨時禁航／封控區公告",src:"國防部動態",def:"warn"},
+  {id:"m4",ind:"海警「執法」範圍",watch:"是否擴大到台灣港口航線、對商船登船檢查",src:"海警通告",def:"warn"},
+  {id:"m5",ind:"網路與基礎設施攻擊",watch:"對政府、能源、金融、交通的攻擊由騷擾升級為致癱",src:"資安通報",def:"ok"}]},
+ {g:"經濟／金融",items:[
   {id:"e1",ind:"對台經濟制裁／貿易中斷",watch:"具體公告：中止 ECFA 項目、禁運、限制台灣船舶",src:"商務部公告",def:"warn"},
-  {id:"e2",ind:"能源與糧食存量",watch:"天然氣存量天數、煤／油存量、糧食自給天數（封鎖下的續航力）",src:"經濟部／台電",def:"warn"},
-  {id:"e3",ind:"風險定價（市場）",watch:"航運保費、台灣主權 CDS、外資撤離、半導體產能外移速度",src:"市場數據",def:"warn"},
+  {id:"e2",ind:"能源與糧食存量",watch:"天然氣存量天數、煤／油存量、糧食自給天數",src:"經濟部／台電",def:"warn"},
+  {id:"e3",ind:"風險定價（市場）",watch:"航運保費、主權 CDS、外資撤離、產能外移速度",src:"市場數據",def:"warn"},
   {id:"e4",ind:"外國撤僑準備",watch:"旅遊警示升級、撤僑預案、非必要人員撤離",src:"各國領事公告",def:"ok"}]},
- {g:"政治／國際", items:[
-  {id:"p1",ind:"台灣政治走向",watch:"是否推動法理獨立／正名修憲等「不可逆」動作",src:"立法院／官方",def:"ok"},
-  {id:"p2",ind:"外國軍事存在",watch:"駐訓、顧問、聯合演訓是否由「輪替」變「常駐」",src:"國防部／外媒",def:"warn"},
+ {g:"政治／國際",items:[
+  {id:"p1",ind:"台灣政治走向",watch:"是否推動法理獨立／正名修憲等不可逆動作",src:"立法院",def:"ok"},
+  {id:"p2",ind:"外國軍事存在",watch:"駐訓、顧問、聯合演訓是否由輪替變常駐",src:"國防部／外媒",def:"warn"},
   {id:"p3",ind:"美中軍事溝通管道",watch:"熱線、軍事對話是否中斷（中斷＝誤判風險上升）",src:"雙方國防部",def:"warn"},
-  {id:"p4",ind:"北京對台論述語氣",watch:"官方用語是否從「反對」升級為「必須」；新法律與人事安排",src:"官方媒體",def:"warn"}]}
+  {id:"p4",ind:"北京對台論述語氣",watch:"官方用語是否從「反對」升級為「必須」",src:"官方媒體",def:"warn"}]}
 ];
-const V={ok:{t:"正常"},warn:{t:"注意"},bad:{t:"警示"}};
-let state={};
+const VT={ok:"正常",warn:"注意",bad:"警示"};
 function loadInd(){
-  let s=null; try{s=JSON.parse(localStorage.getItem("twrisk_ind_v3")||"null")}catch(e){}
-  IND.forEach(g=>g.items.forEach(it=>state[it.id]=(s&&s[it.id])?s[it.id]:it.def));
+  let s=null; try{s=JSON.parse(localStorage.getItem("twr3_ind")||"null")}catch(e){}
+  IND.forEach(g=>g.items.forEach(it=>ind[it.id]=(s&&s[it.id])?s[it.id]:it.def));
 }
-function saveInd(){try{localStorage.setItem("twrisk_ind_v3",JSON.stringify(state))}catch(e){}}
+function saveInd(){try{localStorage.setItem("twr3_ind",JSON.stringify(ind))}catch(e){}}
 function renderInd(){
   const host=document.getElementById("groups"); host.innerHTML="";
   IND.forEach(g=>{
-    const h=document.createElement("h2"); h.textContent=g.g; h.style.fontSize="12.5px"; host.appendChild(h);
+    const box=document.createElement("div"); box.className="panel"; box.style.marginTop="8px";
     const t=document.createElement("table");
-    t.innerHTML="<thead><tr><th>指標</th><th>觀察重點（可檢驗）</th><th>出處</th><th>狀態</th></tr></thead>";
+    t.innerHTML="<thead><tr><th style='width:20%'>"+g.g+"</th><th style='width:44%'>觀察重點</th>"+
+                "<th style='width:20%'>出處</th><th style='width:16%'>狀態</th></tr></thead>";
     const tb=document.createElement("tbody");
     g.items.forEach(it=>{
       const tr=document.createElement("tr");
-      tr.innerHTML='<td class="ind">'+it.ind+'</td><td class="watch">'+it.watch+'</td><td class="src">'+it.src+
-        '</td><td class="st"><span class="seg">'+["ok","warn","bad"].map(v=>
-        '<button data-v="'+v+'" data-id="'+it.id+'"'+(state[it.id]===v?' class="on"':'')+'>'+V[v].t+'</button>').join("")+'</span></td>';
+      tr.innerHTML='<td style="font-weight:500">'+it.ind+'</td>'+
+        '<td style="color:var(--ink2);font-size:12.5px">'+it.watch+'</td>'+
+        '<td style="color:var(--ink3);font-size:12px">'+it.src+'</td>'+
+        '<td><span class="seg">'+["ok","warn","bad"].map(v=>
+          '<button type="button" data-v="'+v+'" data-id="'+it.id+'"'+(ind[it.id]===v?' class="on"':'')+'>'+VT[v]+'</button>').join("")+'</span></td>';
       tb.appendChild(tr);
     });
-    t.appendChild(tb); host.appendChild(t);
+    t.appendChild(tb); box.appendChild(t); host.appendChild(box);
   });
-  host.querySelectorAll("button[data-id]").forEach(b=>{b.onclick=()=>{state[b.dataset.id]=b.dataset.v;saveInd();renderInd();}});
-}
-function resetInd(){IND.forEach(g=>g.items.forEach(it=>state[it.id]=it.def));saveInd();renderInd();}
-
-/* ---------- 主渲染 ---------- */
-function renderAll(){
-  renderSrc();
-  const r=calc();
-  document.getElementById("heat").textContent=r.heat;
-  const lv=document.getElementById("level"); lv.textContent=r.level; lv.style.color=r.col;
-  document.getElementById("n").textContent=r.N;
-  document.getElementById("nsrc").textContent=(DATA.sources||[]).filter(s=>chk[s.id]&&s.ok).length;
-  document.getElementById("chips").innerHTML =
-    '<span class="chip">警示 '+r.hi+'</span><span class="chip">注意 '+r.mid+'</span><span class="chip">緩和 '+r.cal+'</span>'+
-    '<span class="chip">其他 '+(r.N-r.hi-r.mid-r.cal)+'</span>';
-  document.getElementById("hi").innerHTML  = list(r.A.filter(a=>a.k==="警示"), "近期沒有命中高階關鍵詞的報導。", 25);
-  document.getElementById("mid").innerHTML = list(r.A.filter(a=>a.k==="注意"), "近期沒有中等強度訊號。", 25);
-  document.getElementById("all").innerHTML = list(r.A, "沒有資料。", 400);
+  host.querySelectorAll("button[data-id]").forEach(b=>{
+    b.onclick=()=>{ind[b.dataset.id]=b.dataset.v;saveInd();renderInd();};
+  });
 }
 
-/* ---------- 一次性填寫 ---------- */
+/* ------- 靜態區 ------- */
 function fillStatic(){
-  document.getElementById("ts").textContent = DATA.ts;
-  const ok=(DATA.sources||[]).filter(s=>s.ok).length;
-  document.getElementById("srcline").textContent =
-    "來源 "+(DATA.sources||[]).length+" 家（成功 "+ok+" 家）　·　報導 "+(DATA.arts||[]).length+" 則";
+  document.getElementById("ts").textContent=DATA.ts;
   const h=DATA.hist||[];
   document.getElementById("hist").innerHTML = h.length
-    ? h.map(x=>x.ts+"　佔比 "+x.heat+"%　("+x.level+"．"+x.n+" 則．來源 "+x.src_ok+"/"+x.src_all+")").join("<br>")
+    ? '<table><thead><tr><th>時間</th><th>事件數</th><th>警示</th><th>注意</th><th>佔比</th><th>層級</th><th>來源</th></tr></thead><tbody>'+
+      h.slice().reverse().map(x=>'<tr><td class="mono">'+x.ts+'</td><td class="mono">'+(x.ev!=null?x.ev:"-")+
+      '</td><td class="mono">'+x.hi+'</td><td class="mono">'+x.mid+'</td><td class="mono">'+x.heat+
+      '%</td><td>'+x.level+'</td><td class="mono">'+x.src_ok+'/'+x.src_all+'</td></tr>').join("")+'</tbody></table>'
     : "尚無歷史資料。";
-  document.getElementById("srclinks").innerHTML = (DATA.sources||[]).map(s=>
-    '<a href="'+s.url+'" target="_blank" rel="noopener">'+s.name+'</a>'+(s.ok?'':'<span class="m">(失敗)</span>')
-  ).join("　·　") + ((DATA.errors&&DATA.errors.length)? '<div style="margin-top:6px">抓取警告：'+
-    DATA.errors.join('；').replace(/</g,'&lt;')+'</div>' : '');
+  document.getElementById("srclinks").innerHTML =
+    (DATA.sources||[]).map(s=>'<a href="'+esc(s.url)+'" target="_blank" rel="noopener">'+esc(s.name)+'</a>'+
+      (s.ok?'':'<span style="color:var(--ink3)">（失敗）</span>')).join(' · ')+
+    ((DATA.errors&&DATA.errors.length)?'<div style="margin-top:6px">抓取警告：'+esc(DATA.errors.join('；'))+'</div>':'');
 }
 
 loadChk(); loadInd(); renderInd(); fillStatic(); renderAll();
