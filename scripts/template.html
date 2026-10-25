@@ -134,6 +134,24 @@
   .seg button.on[data-v="warn"]{background:var(--mid);color:#fff}
   .seg button.on[data-v="bad"]{background:var(--hi);color:#fff}
   .note{font-size:12.5px;color:var(--ink2);line-height:1.75}
+  /* 人工判讀：與事件流同步 */
+  .indrow{display:flex;gap:14px;align-items:flex-start;padding:11px 0;border-bottom:1px solid var(--line2)}
+  .indrow:last-child{border-bottom:0}
+  .indmain{flex:1;min-width:0}
+  .indname{font-size:13.5px;font-weight:500;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+  .tagx{font-family:'Geist Mono',monospace;font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;
+        padding:1px 6px;border-radius:var(--r-pill);background:var(--ink);color:#fff}
+  .indwatch{font-size:12px;color:var(--ink3);margin-top:2px;line-height:1.55}
+  .indev{font-size:12px;color:var(--ink2);margin-top:5px;line-height:1.65}
+  .indev a{color:var(--ink2)}
+  .indev a:hover{color:var(--accent)}
+  .evn{font-family:'Geist Mono',monospace;font-size:11px;color:var(--ink3)}
+  .indctl{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:5px}
+  .resetlnk{font:inherit;font-size:11px;color:var(--ink3);background:none;border:0;cursor:pointer;padding:0;
+            font-family:'Geist Mono',monospace}
+  .resetlnk:hover{color:var(--accent)}
+  .indsum{font-family:'Geist Mono',monospace;font-size:11px;color:var(--ink3);
+          text-transform:none;letter-spacing:0;font-weight:400}
   details.gen{border-radius:10px;box-shadow:0 0 0 1px var(--line);padding:12px 15px;margin-top:8px}
   details.gen summary{cursor:pointer;font-family:'Geist Mono',monospace;font-size:11.5px;color:var(--ink2)}
   details.gen[open] summary{margin-bottom:10px}
@@ -218,7 +236,7 @@
   <div id="stream"></div>
   <details class="gen" id="genwrap"><summary id="gensum">其他事件</summary><div id="genlist" class="evlist"></div></details>
 
-  <h2>人工判讀指標 Manual</h2>
+  <h2>人工判讀指標 Manual <span class="indsum" id="indsum"></span></h2>
   <div id="groups"></div>
 
   <h2>趨勢 Trend</h2>
@@ -246,7 +264,7 @@ const SRC = {}; (DATA.sources||[]).forEach(s=>SRC[s.id]=s);
 const ARTS = DATA.arts||[];
 const RANK = {警示:3, 注意:2, 緩和:1, 一般:0};
 const SECLS = {警示:"hi", 注意:"mid", 緩和:"lo", 一般:"gen"};
-let chk = {}, ind = {};
+let chk = {}, manual = {}, LAST_EVS = [];
 
 /* ------- 來源勾選 ------- */
 function loadChk(){
@@ -375,55 +393,108 @@ function renderAll(){
   document.getElementById("gensum").textContent="其他 "+gen.length+" 個事件（未命中關鍵詞）";
   document.getElementById("genwrap").style.display = gen.length? "block":"none";
   document.getElementById("evhint").textContent="　"+main.length+" 件";
+  LAST_EVS=evs;
+  renderInd(evs);                       // 人工判讀指標跟著同一批事件同步
 }
 
-/* ------- 人工指標 ------- */
+/* ------- 人工判讀指標：狀態由事件流自動建議，可人工覆寫 ------- */
 const IND=[
  {g:"軍事",items:[
-  {id:"m1",ind:"兩棲／後勤動員",watch:"登陸艦與民用滾裝船徵用公告、兩棲部隊跨區集結、演習後兵力未回撤",src:"解放軍動態",def:"warn"},
-  {id:"m2",ind:"演習性質：演→備",watch:"由「演練」轉為「部署」：彈藥前推、醫療與血庫動員、動員令徵候",src:"戰區公告",def:"warn"},
-  {id:"m3",ind:"海空擾台頻次與縱深",watch:"越中線架次、進入我領空、臨時禁航／封控區公告",src:"國防部動態",def:"warn"},
-  {id:"m4",ind:"海警「執法」範圍",watch:"是否擴大到台灣港口航線、對商船登船檢查",src:"海警通告",def:"warn"},
-  {id:"m5",ind:"網路與基礎設施攻擊",watch:"對政府、能源、金融、交通的攻擊由騷擾升級為致癱",src:"資安通報",def:"ok"}]},
+  {id:"m1",ind:"兩棲／後勤動員",watch:"登陸艦與民用滾裝船徵用公告、兩棲部隊跨區集結、演習後兵力未回撤",src:"解放軍動態",
+   m:["登陸","兩棲","amphibious","搶灘","動員","mobilis","徵用","滾裝"]},
+  {id:"m2",ind:"演習性質：演→備",watch:"由「演練」轉為「部署」：彈藥前推、醫療與血庫動員、戰備提升",src:"戰區公告",
+   m:["軍演","演習","drill","exercise","war ?game","實彈","live[- ]fire","戰備","readiness"]},
+  {id:"m3",ind:"海空擾台頻次與縱深",watch:"越中線架次、進入我領空、臨時禁航／封控區公告",src:"國防部動態",
+   m:["擾台","中線","median line","incursion","越線","禁航","禁飛","no[- ]fly","airspace","領空","共機","共艦"]},
+  {id:"m4",ind:"海警「執法」範圍",watch:"是否擴大到台灣港口航線、對商船登船檢查",src:"海警通告",
+   m:["海警","coast guard","登船","臨檢","內水化"]},
+  {id:"m5",ind:"網路與基礎設施攻擊",watch:"對政府、能源、金融、交通的攻擊由騷擾升級為致癱",src:"資安通報",
+   m:["網攻","網路攻擊","cyber","駭","DDoS","勒索","基礎設施","斷網"]}]},
  {g:"經濟／金融",items:[
-  {id:"e1",ind:"對台經濟制裁／貿易中斷",watch:"具體公告：中止 ECFA 項目、禁運、限制台灣船舶",src:"商務部公告",def:"warn"},
-  {id:"e2",ind:"能源與糧食存量",watch:"天然氣存量天數、煤／油存量、糧食自給天數",src:"經濟部／台電",def:"warn"},
-  {id:"e3",ind:"風險定價（市場）",watch:"航運保費、主權 CDS、外資撤離、產能外移速度",src:"市場數據",def:"warn"},
-  {id:"e4",ind:"外國撤僑準備",watch:"旅遊警示升級、撤僑預案、非必要人員撤離",src:"各國領事公告",def:"ok"}]},
+  {id:"e1",ind:"對台經濟制裁／貿易中斷",watch:"具體公告：中止 ECFA 項目、禁運、限制台灣船舶",src:"商務部公告",
+   m:["制裁","sanction","禁運","ECFA","關稅","tariff","斷鏈"]},
+  {id:"e2",ind:"能源與糧食存量",watch:"天然氣存量天數、煤／油存量、糧食自給天數",src:"經濟部／台電",
+   m:["天然氣","LNG","能源","糧食","庫存","存量","電網","reserve"]},
+  {id:"e3",ind:"風險定價（市場）",watch:"航運保費、主權 CDS、外資撤離、產能外移速度",src:"市場數據",
+   m:["保費","insurance","CDS","外資","撤資","產能外移","航運","shipping","股市"]},
+  {id:"e4",ind:"外國撤僑準備",watch:"旅遊警示升級、撤僑預案、非必要人員撤離",src:"各國領事公告",
+   m:["撤僑","evacuat\\w*\\s+(its\\s+|the\\s+)?(citizens|nationals|foreigners)","旅遊警示","travel advis","領事","非必要人員"]}]},
  {g:"政治／國際",items:[
-  {id:"p1",ind:"台灣政治走向",watch:"是否推動法理獨立／正名修憲等不可逆動作",src:"立法院",def:"ok"},
-  {id:"p2",ind:"外國軍事存在",watch:"駐訓、顧問、聯合演訓是否由輪替變常駐",src:"國防部／外媒",def:"warn"},
-  {id:"p3",ind:"美中軍事溝通管道",watch:"熱線、軍事對話是否中斷（中斷＝誤判風險上升）",src:"雙方國防部",def:"warn"},
-  {id:"p4",ind:"北京對台論述語氣",watch:"官方用語是否從「反對」升級為「必須」",src:"官方媒體",def:"warn"}]}
+  {id:"p1",ind:"台灣政治走向",watch:"是否推動法理獨立／正名修憲等不可逆動作",src:"立法院",
+   m:["法理獨立","修憲","正名","independence","referendum","公投"]},
+  {id:"p2",ind:"外國軍事存在",watch:"駐訓、顧問、聯合演訓是否由輪替變常駐",src:"國防部／外媒",
+   m:["駐台","顧問","聯合演訓","joint (drill|exercise)","駐訓","美軍","adviser"]},
+  {id:"p3",ind:"美中軍事溝通管道",watch:"熱線、軍事對話是否中斷（中斷＝誤判風險上升）",src:"雙方國防部",
+   m:["熱線","軍事對話","military (talk|dialogue)","中斷"]},
+  {id:"p4",ind:"北京對台論述語氣",watch:"官方用語是否從「反對」升級為「必須」",src:"官方媒體",
+   m:["國台辦","習近平","發言人","譴責"]}]}
 ];
-const VT={ok:"正常",warn:"注意",bad:"警示"};
-function loadInd(){
-  let s=null; try{s=JSON.parse(localStorage.getItem("twr3_ind")||"null")}catch(e){}
-  IND.forEach(g=>g.items.forEach(it=>ind[it.id]=(s&&s[it.id])?s[it.id]:it.def));
+const VTX={ok:"正常",warn:"注意",bad:"警示"};
+
+function loadManual(){ try{ manual=JSON.parse(localStorage.getItem("twr3_manual")||"{}")||{}; }catch(e){ manual={}; } }
+function saveManual(){ try{ localStorage.setItem("twr3_manual",JSON.stringify(manual)); }catch(e){} }
+function nManual(){ return Object.keys(manual).length; }
+
+/* 依事件流給出建議狀態：有警示級事件→警示；有注意級→注意；否則正常 */
+function suggest(it, evs){
+  let rx; try{ rx=new RegExp(it.m.join("|"),"i"); }catch(e){ rx=/(?!)/; }
+  const hit=(evs||[]).filter(e=>rx.test((e.rep||"")+" "+(e.kw||"")));
+  let st="ok";
+  if(hit.some(e=>e.tier==="警示")) st="bad";
+  else if(hit.some(e=>e.tier==="注意")) st="warn";
+  return {st:st, hit:hit};
 }
-function saveInd(){try{localStorage.setItem("twr3_ind",JSON.stringify(ind))}catch(e){}}
-function renderInd(){
-  const host=document.getElementById("groups"); host.innerHTML="";
+
+function renderInd(evs){
+  const host=document.getElementById("groups"); if(!host) return;
+  host.innerHTML="";
+  const tally={ok:0,warn:0,bad:0};
+  let anyHit=0;
   IND.forEach(g=>{
     const box=document.createElement("div"); box.className="panel"; box.style.marginTop="8px";
-    const t=document.createElement("table");
-    t.innerHTML="<thead><tr><th style='width:20%'>"+g.g+"</th><th style='width:44%'>觀察重點</th>"+
-                "<th style='width:20%'>出處</th><th style='width:16%'>狀態</th></tr></thead>";
-    const tb=document.createElement("tbody");
+    const head=document.createElement("div"); head.className="cathead"; head.style.marginTop="0";
+    head.innerHTML='<span class="t">'+g.g+'</span>'; box.appendChild(head);
     g.items.forEach(it=>{
-      const tr=document.createElement("tr");
-      tr.innerHTML='<td style="font-weight:500">'+it.ind+'</td>'+
-        '<td style="color:var(--ink2);font-size:12.5px">'+it.watch+'</td>'+
-        '<td style="color:var(--ink3);font-size:12px">'+it.src+'</td>'+
-        '<td><span class="seg">'+["ok","warn","bad"].map(v=>
-          '<button type="button" data-v="'+v+'" data-id="'+it.id+'"'+(ind[it.id]===v?' class="on"':'')+'>'+VT[v]+'</button>').join("")+'</span></td>';
-      tb.appendChild(tr);
+      const sg=suggest(it, evs||[]);
+      const ov=manual[it.id];                    // 人工覆寫；undefined = 跟隨自動
+      const st=ov||sg.st;
+      tally[st]++; if(sg.hit.length) anyHit++;
+      const evHtml=sg.hit.slice(0,3).map(e=>{
+        const t=esc(e.rep||"");
+        const short=t.length>56? t.slice(0,56)+"…" : t;
+        return '<a href="'+esc(e.repLink||"#")+'" target="_blank" rel="noopener">'+short+'</a>'+
+               (e.nsrcs>1?'<span class="evn">（'+e.nsrcs+' 家）</span>':'');
+      }).join('　·　');
+      const row=document.createElement("div"); row.className="indrow";
+      row.innerHTML=
+        '<div class="indmain">'+
+          '<div class="indname">'+esc(it.ind)+(ov?'<span class="tagx">人工</span>':'')+'</div>'+
+          '<div class="indwatch">'+esc(it.watch)+'</div>'+
+          '<div class="indev">'+(sg.hit.length
+            ? '<span class="evn">對應事件 '+sg.hit.length+' 件：</span>'+evHtml
+            : '<span class="evn">目前勾選的來源中，沒有對應事件</span>')+'</div>'+
+        '</div>'+
+        '<div class="indctl">'+
+          '<span class="seg">'+["ok","warn","bad"].map(v=>
+            '<button type="button" data-v="'+v+'" data-id="'+it.id+'"'+(st===v?' class="on"':'')+'>'+VTX[v]+'</button>'
+          ).join("")+'</span>'+
+          (ov? '<button type="button" class="resetlnk" data-reset="'+it.id+'">↺ 跟隨自動</button>'
+             : '<span class="resetlnk" style="cursor:default">自動建議</span>')+
+        '</div>';
+      box.appendChild(row);
     });
-    t.appendChild(tb); box.appendChild(t); host.appendChild(box);
+    host.appendChild(box);
   });
   host.querySelectorAll("button[data-id]").forEach(b=>{
-    b.onclick=()=>{ind[b.dataset.id]=b.dataset.v;saveInd();renderInd();};
+    b.onclick=()=>{ manual[b.dataset.id]=b.dataset.v; saveManual(); renderInd(LAST_EVS); };
   });
+  host.querySelectorAll("button[data-reset]").forEach(b=>{
+    b.onclick=()=>{ delete manual[b.dataset.reset]; saveManual(); renderInd(LAST_EVS); };
+  });
+  const s=document.getElementById("indsum");
+  if(s) s.textContent="　建議：警示 "+tally.bad+"／注意 "+tally.warn+"／正常 "+tally.ok+
+      "　·　有對應事件 "+anyHit+" 項"+
+      (nManual()? "　·　人工覆寫 "+nManual()+" 項：" : "");
 }
 
 /* ------- 靜態區 ------- */
@@ -442,7 +513,7 @@ function fillStatic(){
     ((DATA.errors&&DATA.errors.length)?'<div style="margin-top:6px">抓取警告：'+esc(DATA.errors.join('；'))+'</div>':'');
 }
 
-loadChk(); loadInd(); renderInd(); fillStatic(); renderAll();
+loadChk(); loadManual(); fillStatic(); renderAll();
 </script>
 </body>
 </html>
