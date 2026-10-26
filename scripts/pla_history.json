@@ -1,0 +1,78 @@
+{
+ "2026-10-19": {
+  "air": 5,
+  "n": 2,
+  "official": null,
+  "ship": 6,
+  "srcs": [
+   "The Economic Times"
+  ],
+  "title": "Taiwan detects 5 PLA aircraft, 6 PLAN vessels operating around island - The Economic Times"
+ },
+ "2026-10-20": {
+  "air": 14,
+  "n": 1,
+  "official": null,
+  "ship": 14,
+  "srcs": [
+   "Taiwan News"
+  ],
+  "title": "Taiwan tracks 14 Chinese military aircraft, 14 ships - Taiwan News"
+ },
+ "2026-10-21": {
+  "air": 29,
+  "n": 2,
+  "official": null,
+  "ship": 15,
+  "srcs": [
+   "Agenzia Nova",
+   "Taiwan News"
+  ],
+  "title": "China has sent 29 military aircraft and 15 ships to the Taiwan Strait - Agenzia Nova"
+ },
+ "2026-10-23": {
+  "air": null,
+  "n": 2,
+  "official": null,
+  "ship": 3,
+  "srcs": [
+   "LatestLY",
+   "The Tribune"
+  ],
+  "title": "Taiwan detects 3 Chinese naval vessels operating around its territory - The Tribune"
+ },
+ "2026-10-24": {
+  "air": null,
+  "n": 1,
+  "official": null,
+  "ship": 6,
+  "srcs": [
+   "Taiwan News"
+  ],
+  "title": "Taiwan tracks 6 Chinese ships around nation - Taiwan News"
+ },
+ "2026-10-25": {
+  "air": null,
+  "n": 3,
+  "official": 8,
+  "ship": 5,
+  "srcs": [
+   "Rti 中央廣播電臺",
+   "經濟日報"
+  ],
+  "title": "5艘共艦8艘公務船擾台　國軍嚴密監控 - 經濟日報"
+ },
+ "2026-10-26": {
+  "air": 3,
+  "n": 4,
+  "official": 9,
+  "ship": 6,
+  "srcs": [
+   "ANI News",
+   "Newtalk新聞",
+   "The Tribune",
+   "Yahoo新聞"
+  ],
+  "title": "共機3架次擾台！1架越中線 共艦6艘、公務船9艘活動 - Yahoo新聞"
+ }
+}

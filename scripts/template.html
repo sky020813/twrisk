@@ -3,10 +3,36 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>台海風險指標追蹤表</title>
+<title>台海風險觀測儀表板｜開源數據整合工具</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="description" content="開源數據整合工具：每日彙整 29 個公開來源的台海相關報導，將同一事件聚合後計算風險指標。提供來源自選、趨勢圖表、共機共艦活動量與人工判讀面板。">
+<meta name="theme-color" content="#ffffff">
+<meta property="og:type" content="website">
+<meta property="og:title" content="台海風險觀測儀表板">
+<meta property="og:description" content="開源數據整合工具：每日彙整 29 個公開來源的台海相關報導，將同一事件聚合後計算風險指標。">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+
+<!-- ============ 廣告設定 ============
+     審核通過後，把 pub 與 slot 填上就生效；留空 = 完全不載入廣告（版位也不會出現）。
+     pub  例：ca-pub-1234567890123456
+     slot 例：1234567890（在 AdSense 後台的「廣告單元」裡建立後取得）
+     ================================== -->
+<meta name="google-adsense-account" content="">
+<script>
+window.__ADS__ = { pub: "", slot: { infeed: "", bottom: "" } };
+(function () {
+  var A = window.__ADS__ || {};
+  if (!A.pub) return;                       // 沒填 pub → 什麼都不載入
+  var s = document.createElement("script");
+  s.async = true; s.crossOrigin = "anonymous";
+  s.src = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=" + A.pub;
+  document.head.appendChild(s);
+  var m = document.querySelector('meta[name="google-adsense-account"]');
+  if (m) m.setAttribute("content", A.pub);
+})();
+</script>
 <style>
   :root{
     --bg:#ffffff; --ink:#171717; --ink2:#4d4d4d; --ink3:#808080;
@@ -39,6 +65,8 @@
   .tag{font-size:10.5px;font-weight:500;text-transform:uppercase;letter-spacing:.08em;
        color:var(--ink3);border:1px solid var(--line2);border-radius:var(--r-pill);padding:1px 8px}
   .topmeta{margin-left:auto;display:flex;align-items:center;gap:14px;font-size:12px;color:var(--ink2)}
+  .freq{font-size:11px;color:var(--ink3);border:1px solid var(--line2);border-radius:var(--r-pill);
+        padding:1px 9px;white-space:nowrap}
   .btn{
     font:inherit;font-size:12.5px;font-weight:500;color:var(--ink);background:#fff;cursor:pointer;
     padding:5px 12px;border:0;border-radius:6px;
@@ -134,6 +162,54 @@
   .seg button.on[data-v="warn"]{background:var(--mid);color:#fff}
   .seg button.on[data-v="bad"]{background:var(--hi);color:#fff}
   .note{font-size:12.5px;color:var(--ink2);line-height:1.75}
+  /* 廣告版位：未設定 pub 時整個隱藏，不留空白 */
+  .adslot{margin:22px 0;text-align:center}
+  .adslot .lbl{font-family:'Geist Mono',monospace;font-size:9.5px;text-transform:uppercase;
+               letter-spacing:.1em;color:var(--ink3);display:block;margin-bottom:5px}
+  @media print{.adslot{display:none}}
+  /* 靜態頁（關於／隱私／聯絡）*/
+  .doc{max-width:760px;margin:0 auto;padding:26px 24px 72px;line-height:1.85}
+  .doc h1{font-size:22px;font-weight:600;letter-spacing:-.02em;margin:0 0 4px}
+  .doc h2{font-size:13px;font-weight:600;text-transform:none;letter-spacing:0;color:var(--ink);
+          margin:26px 0 6px;font-family:inherit}
+  .doc p,.doc li{font-size:14px;color:var(--ink2)}
+  .doc ul{padding-left:20px}
+  .doc .updated{font-family:'Geist Mono',monospace;font-size:11.5px;color:var(--ink3)}
+  .doc a{color:var(--accent)}
+  .footlinks{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+  /* 互動工具列（搜尋／層級／排序）*/
+  .q{font:inherit;font-size:12.5px;padding:5px 10px;border:0;border-radius:6px;background:#fff;
+     color:var(--ink);box-shadow:0 0 0 1px var(--line);min-width:230px}
+  .q::placeholder{color:var(--ink3)}
+  .q:focus{outline:2px solid var(--accent);outline-offset:1px}
+  .btn.on{background:var(--ink);color:#fff;box-shadow:none}
+  /* 圖表 */
+  .grid3{display:grid;grid-template-columns:1.15fr .95fr 1.2fr;gap:10px}
+  .grid2{display:grid;grid-template-columns:1.3fr 1fr;gap:10px}
+  .statrow{display:flex;gap:18px;flex-wrap:wrap;align-items:baseline}
+  .statrow .st{display:flex;flex-direction:column;gap:1px}
+  .statrow .st b{font-family:'Geist Mono',monospace;font-size:21px;font-weight:600;letter-spacing:-.02em}
+  .statrow .st span{font-family:'Geist Mono',monospace;font-size:10px;text-transform:uppercase;
+                    letter-spacing:.07em;color:var(--ink3)}
+  .rfloat{font-family:'Geist Mono',monospace;font-size:17px;font-weight:600}
+  table.mini{font-size:12.5px}
+  table.mini th,table.mini td{padding:4px 7px}
+  .chartbox{padding:12px 14px}
+  .chartbox .ct{font-family:'Geist Mono',monospace;font-size:10.5px;text-transform:uppercase;
+                letter-spacing:.08em;color:var(--ink3);margin-bottom:9px}
+  .chartbox svg{display:block;width:100%;height:auto;overflow:visible}
+  .lgd{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:6px;font-size:11.5px;color:var(--ink2)}
+  .lg i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:4px}
+  .barrow{display:flex;align-items:center;gap:8px;font-size:11.5px;margin-bottom:6px}
+  .barrow .bl{flex:none;width:94px;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .barrow .bt{flex:1;height:8px;background:var(--surf2);border-radius:99px;overflow:hidden}
+  .barrow .bt i{display:block;height:100%;background:var(--accent);border-radius:99px}
+  .barrow .bv{flex:none;width:26px;text-align:right;font-family:'Geist Mono',monospace;
+              font-size:10.5px;color:var(--ink3)}
+  .inslist{margin:0;padding-left:18px}
+  .inslist li{margin-bottom:6px}
+  .inslist b{color:var(--ink);font-weight:600}
+  @media (max-width:720px){.grid3,.grid2{grid-template-columns:1fr}.q{min-width:0;width:100%}}
   /* 人工判讀：與事件流同步 */
   .indrow{display:flex;gap:14px;align-items:flex-start;padding:11px 0;border-bottom:1px solid var(--line2)}
   .indrow:last-child{border-bottom:0}
@@ -179,9 +255,10 @@
 
 <header class="top">
   <div class="topin">
-    <span class="brand">台海風險指標追蹤表</span>
-    <span class="tag">Monitor</span>
+    <span class="brand">台海風險觀測儀表板</span>
+    <span class="tag">開源數據整合工具</span>
     <span class="topmeta">
+      <span class="freq" title="每日台北時間 08:00（UTC+8）由排程自動執行一次">每日 08:00（UTC+8）自動更新</span>
       <span class="mono" id="ts">—</span>
       <button class="btn" onclick="window.print()">列印 / PDF</button>
       <button class="btn" onclick="location.reload()">重新載入</button>
@@ -215,6 +292,9 @@
   </div>
   <div class="chips" id="chips"></div>
 
+  <h2>資料洞察 Data Insights</h2>
+  <div class="panel note"><ul class="inslist" id="insights"></ul></div>
+
   <h2>來源篩選 Sources</h2>
   <div class="filters">
     <div class="frow">
@@ -232,29 +312,125 @@
     <div id="srcpanel"></div>
   </div>
 
-  <h2>事件流 Events <span style="text-transform:none;letter-spacing:0;font-family:inherit" id="evhint"></span></h2>
+  <h2>事件流 Events <span class="indsum" id="evhint"></span></h2>
+  <div class="filters" style="margin-bottom:10px">
+    <div class="frow">
+      <input id="q" class="q" type="search" placeholder="搜尋事件標題或命中關鍵詞…" autocomplete="off">
+      <span class="sep"></span>
+      <span class="evn" style="margin-right:2px">層級</span>
+      <button type="button" class="btn tbtn on" data-tier="all">全部</button>
+      <button type="button" class="btn tbtn" data-tier="警示">警示</button>
+      <button type="button" class="btn tbtn" data-tier="注意">注意</button>
+      <button type="button" class="btn tbtn" data-tier="緩和">緩和</button>
+      <span class="sep"></span>
+      <span class="evn" style="margin-right:2px">排序</span>
+      <button type="button" class="btn sbtn on" data-sort="sev">嚴重度</button>
+      <button type="button" class="btn sbtn" data-sort="new">最新</button>
+      <button type="button" class="btn sbtn" data-sort="src">最多家報導</button>
+      <span class="sep"></span>
+      <span class="evn" id="qlabel"></span>
+    </div>
+  </div>
   <div id="stream"></div>
   <details class="gen" id="genwrap"><summary id="gensum">其他事件</summary><div id="genlist" class="evlist"></div></details>
+
+  <div class="adslot" data-slot="infeed" style="display:none"></div>
 
   <h2>人工判讀指標 Manual <span class="indsum" id="indsum"></span></h2>
   <div id="groups"></div>
 
-  <h2>趨勢 Trend</h2>
-  <div class="panel note" id="hist"></div>
-
-  <h2>方法與限制 Method</h2>
-  <div class="panel note">
-    <b>1. 以「事件」計分，不是以「報導」計分。</b>同一件事常被十家媒體各寫一則標題，若逐則算，被廣泛報導的事件會把數字整個拉偏。
-    本表先把標題正規化（去掉「 - Reuters」這類來源後綴、去標點、轉小寫），再以「英文詞 + 中文雙字」為特徵算 Jaccard 相似度，
-    相似度 ≥ 0.40 的歸為同一事件，每件只算一次。<br>
-    <b>2. 嚴重度佔比＝(警示事件×3＋注意事件×1)÷(3×事件總數)</b>，與抓取量無關。勾選來源會改變分母，只勾一家時該家的用語習慣等於全部，數字會很跳；要跨日比較請固定同一組來源。<br>
-    <b>3. 這是關鍵詞指標，不是情報評估、也不是機率預測。</b>標題含同一詞但語意不同（例如「學者稱封鎖比登陸更可能」）也會被計分，所以卡片上直接標出命中的詞，讓你自己判斷合不合理。<br>
-    <b>4. 部分媒體（Reuters／AP／FT／The Economist 等）沒有公開 RSS</b>，標題經 Google News 取得，連結會先導到 Google 再轉原站，部分有付費牆。抓取失敗的來源會標灰並排除。
+  <h2>共機／共艦活動 PLA Activity</h2>
+  <div class="grid2">
+    <div class="panel chartbox">
+      <div class="ct">每日公布量（柱） vs 風險指標（線）</div>
+      <div id="chPla"></div>
+      <div class="evn" id="plaCorr" style="margin-top:9px"></div>
+    </div>
+    <div class="panel chartbox">
+      <div class="ct">最新公布</div>
+      <div id="plaNow"></div>
+      <div id="plaTable" style="margin-top:10px"></div>
+    </div>
   </div>
+  <div class="panel note" style="margin-top:10px">
+    <b>資料性質與限制</b>｜數字來自<b>國防部每日公布、媒體轉述</b>（非官方 API）。國防部於每日上午公布
+    「前一日」的偵獲量，故<b>公布日 ≠ 活動日</b>（本表以公布日對齊）。同一日不同報導偶有不同數字，
+    此處取<b>最多來源一致</b>者；查無公布值的日期會留白，不補零。
+    公務船（海警、公務船）與軍艦<b>分開記錄</b>，不合併計算。<br>
+    <b>關於相關性</b>｜皮爾森相關係數僅描述兩組數字的<b>同步程度</b>，<b>不代表因果</b>。
+    且兩組序列都來自同一批新聞報導，可能出現「報導量一起增加」造成的<b>假相關</b>；風險指標衡量的又是
+    媒體用語強度而非事件本身，解讀時請一併考慮這點。
+  </div>
+
+  <h2>趨勢 Trend</h2>
+  <div class="grid3">
+    <div class="panel chartbox"><div class="ct">事件嚴重度佔比（%）</div><div id="chLine"></div></div>
+    <div class="panel chartbox"><div class="ct">本期事件層級分布</div><div id="chDonut"></div></div>
+    <div class="panel chartbox"><div class="ct">各來源報導數</div><div id="chBars"></div></div>
+  </div>
+  <details class="gen" style="margin-top:10px"><summary>展開歷史數據表</summary>
+    <div class="note" id="hist" style="overflow-x:auto"></div>
+  </details>
+
+  <h2>方法論 Methodology</h2>
+  <div class="panel note">
+    <p style="margin:0 0 10px"><b>一、資料來源</b><br>
+    彙整 29 個公開來源，涵蓋國際通訊社、國際媒體、區域媒體、專業智庫與台灣媒體。
+    提供公開 RSS 者直接訂閱原始 feed；未提供 RSS 者（Reuters、AP、Financial Times、The Economist 等）
+    經 Google News 檢索取得標題與連結。<b>本站僅呈現標題與連結，不重製任何媒體之內容</b>，
+    點擊後前往原始出處閱讀全文。</p>
+
+    <p style="margin:0 0 10px"><b>二、事件聚合（避免重複計算）</b><br>
+    同一事件常由多家媒體分別報導。若以「單則報導」計分，被廣泛報導的事件將放大整體訊號。
+    本表先對標題進行正規化（移除來源標記、標點與大小寫差異），再以「英文詞組 + 中文雙字」
+    為特徵集計算 Jaccard 相似度，達門檻者歸為同一事件，<b>每事件僅計一次</b>。
+    聚合單位為「事件」，非「報導」。</p>
+
+    <p style="margin:0 0 10px"><b>三、評分定義</b><br>
+    每則標題依關鍵詞表分為四級：<b>警示</b>（封鎖、入侵、登陸、開戰、撤僑、飛彈、制裁、禁航、實彈、斷鏈）、
+    <b>注意</b>（軍演、擾台、中線、海警、灰色地帶、戰備、後備、越線）、<b>緩和</b>（交流、會談、和平）、<b>一般</b>。
+    事件層級取其成員之最高級。<br>
+    <b>事件嚴重度佔比</b> ＝ (警示事件 × 3 ＋ 注意事件 × 1) ÷ (3 × 事件總數) × 100%。
+    此指標以事件總數為分母、與抓取量無關，適合同一組來源之跨日比較。</p>
+
+    <p style="margin:0 0 10px"><b>四、更新頻率</b><br>
+    本站<b>每日更新一次</b>，於<b>台北時間（UTC+8）上午 08:00</b> 由排程自動執行，流程為：抓取全部來源
+    → 聚合事件 → 重算風險指標與圖表 → 重新部署網頁。頁面右上角的「上次更新」時間即為該次執行完成的時間。
+    各來源的新聞檢索窗口為<b>近 3～8 天</b>（依來源而異），故指標反映的是「近期」而非單日。
+    若某來源當次抓取失敗，會在各來源清單中標示，並自指標計算中排除。<br>
+    遇排程中斷時，網頁不會消失，只會停留在<b>上一次成功更新</b>的版本；時間戳即為判斷依據。</p>
+
+    <p style="margin:0 0 10px"><b>五、人工判讀與個人設定</b><br>
+    使用者可自行勾選納入計算的來源，並覆寫人工判讀指標的狀態。<b>這些設定與判讀結果僅儲存於您自己的
+    瀏覽器（localStorage），不會上傳、不會影響其他使用者，也不會隨每日更新被覆蓋或重算。</b>
+    要恢復系統建議值，按該指標的「重設」即可。</p>
+
+    <p style="margin:0 0 10px"><b>六、已知限制</b>
+    <br>（1）本表為<b>關鍵詞頻率指標</b>，非情報評估，亦非機率預測。
+    <br>（2）關鍵詞可能誤判語意（例如「學者稱封鎖比登陸更可能」屬分析文字而非事件），
+    故每則事件均標示命中詞，供讀者自行檢核。
+    <br>（3）<b>跨語言不聚合</b>：英文與中文報導同一事件時仍計為兩件。
+    <br>（4）標題用語差異極大時不聚合。
+    <br>（5）未提供 RSS 之來源經 Google News 取得，連結將先導向 Google 再轉至原站；部分內容需付費訂閱。
+    <br>（6）抓取失敗之來源會標示並自計算中排除。</p>
+
+    <p style="margin:0"><b>七、更正</b><br>
+    如發現聚合錯誤或評分不當，請透過<a href="contact.html">聯絡我們</a>反映。</p>
+  </div>
+
+  <div class="adslot" data-slot="bottom" style="display:none"></div>
 
   <footer>
     <div id="srclinks"></div>
+    <div class="footlinks" style="margin-top:12px">
+      <a href="about.html">關於本站</a>
+      <a href="privacy.html">隱私權政策</a>
+      <a href="contact.html">聯絡我們</a>
+      <a href="about.html#method">方法論</a>
+    </div>
     <div style="margin-top:8px">公開資訊整理工具，不構成預測或任何政治立場。人工指標狀態由使用者自行判定，存於本機瀏覽器。</div>
+    <div style="margin-top:4px"><b>更新頻率</b>：每日 08:00（UTC+8）由排程自動執行一次（抓取 → 聚合 → 重算 → 重新部署）。
+      上次更新：<span class="mono" id="ts2">—</span></div>
   </footer>
 </div>
 
@@ -264,7 +440,7 @@ const SRC = {}; (DATA.sources||[]).forEach(s=>SRC[s.id]=s);
 const ARTS = DATA.arts||[];
 const RANK = {警示:3, 注意:2, 緩和:1, 一般:0};
 const SECLS = {警示:"hi", 注意:"mid", 緩和:"lo", 一般:"gen"};
-let chk = {}, manual = {}, LAST_EVS = [];
+let chk = {}, manual = {}, LAST_EVS = [], q = "", tier = "all", sortBy = "sev";
 
 /* ------- 來源勾選 ------- */
 function loadChk(){
@@ -299,6 +475,189 @@ function renderSrc(){
   const okon=(DATA.sources||[]).filter(s=>chk[s.id]&&s.ok).length;
   document.getElementById("chkinfo").textContent="已選 "+on+" / "+(DATA.sources||[]).length+
     "（有資料 "+okon+"）";
+}
+
+/* ------- 工具列：搜尋／層級快篩／排序（只影響清單顯示）------- */
+function loadUI(){
+  try{
+    const o=JSON.parse(localStorage.getItem("twr3_ui")||"{}")||{};
+    q=o.q||""; tier=o.tier||"all"; sortBy=o.sort||"sev";
+  }catch(e){}
+}
+function saveUI(){ try{ localStorage.setItem("twr3_ui",JSON.stringify({q:q,tier:tier,sort:sortBy})); }catch(e){} }
+function wireTb(){
+  const inp=document.getElementById("q");
+  if(inp){ inp.value=q; inp.oninput=function(){ q=inp.value.trim(); saveUI(); renderAll(); }; }
+  document.querySelectorAll(".tbtn").forEach(function(b){
+    b.onclick=function(){ tier=b.dataset.tier; saveUI(); renderAll(); };
+  });
+  document.querySelectorAll(".sbtn").forEach(function(b){
+    b.onclick=function(){ sortBy=b.dataset.sort; saveUI(); renderAll(); };
+  });
+}
+function paintTb(){
+  document.querySelectorAll(".tbtn").forEach(function(b){ b.classList.toggle("on", b.dataset.tier===tier); });
+  document.querySelectorAll(".sbtn").forEach(function(b){ b.classList.toggle("on", b.dataset.sort===sortBy); });
+  const l=document.getElementById("qlabel");
+  if(l) l.textContent=(q||tier!=="all")? "清單已篩選（上方統計不受影響）" : "";
+}
+
+/* ------- 資料洞察：由數據推導的客觀摘要（不是主觀評論）------- */
+function cut(s,n){ s=String(s||""); return s.length>n? s.slice(0,n)+"…" : s; }
+function insights(evs, m){
+  const out=[], h=(DATA.hist||[]);
+  const prev=h.length>1? h[h.length-1-1] : null;              // 上一次（最後一筆是本次）
+  out.push('本期聚合 <b>'+m.n+'</b> 個事件：警示 <b>'+m.hi+'</b>、注意 <b>'+m.mid+
+           '</b>、緩和 <b>'+m.lo+'</b>、一般 <b>'+m.gen+'</b>；嚴重度佔比 <b>'+m.heat+'%</b>'+
+           (prev? '，前次 '+prev.heat+'%'+(m.heat>prev.heat? '（上升）' : m.heat<prev.heat? '（下降）' : '（持平）') : '')+'。');
+  const top=evs.slice().sort(function(a,b){return b.nsrcs-a.nsrcs;})[0];
+  if(top && top.nsrcs>1) out.push('最多來源共同報導的事件：<b>'+esc(cut(top.rep,46))+'</b>（'+top.nsrcs+' 家）。');
+  const kws={}; evs.forEach(function(e){ if(e.tier==="警示"&&e.kw) kws[e.kw]=(kws[e.kw]||0)+1; });
+  const kl=Object.keys(kws);
+  out.push(kl.length? '命中高階關鍵詞：<b>'+kl.map(function(k){return k+'（'+kws[k]+' 件）';}).join('、')+'</b>。'
+                    : '本期沒有事件命中高階關鍵詞（封鎖／入侵／制裁／撤僑／飛彈…）。');
+  const on=(DATA.sources||[]).filter(function(s){return chk[s.id];});
+  const bad=(DATA.sources||[]).filter(function(s){return !s.ok;});
+  out.push('來源：勾選 <b>'+on.length+' / '+(DATA.sources||[]).length+'</b> 家，其中 <b>'+
+           on.filter(function(s){return s.ok;}).length+'</b> 家有資料'+
+           (bad.length? '；本期未取得資料：'+bad.map(function(s){return esc(s.name);}).join('、') : '')+'。');
+  if(prev && prev.ev!=null)
+    out.push('與前次相比：事件數 <b>'+prev.ev+' → '+m.n+'</b>，報導數 <b>'+prev.n+' → '+
+             ARTS.filter(function(a){return chk[a.s];}).length+'</b> 則。');
+  return '<li>'+out.join('</li><li>')+'</li>';
+}
+
+/* ------- 圖表（純內嵌 SVG，無外部套件）------- */
+function chartLine(){
+  const h=(DATA.hist||[]).slice(-16);
+  if(h.length<2) return '<div class="evn">資料點不足（需兩次以上更新）</div>';
+  const W=300,H=96,P=8;
+  const mx=Math.max(8, Math.max.apply(null,h.map(function(x){return x.heat||0;})));
+  const X=function(i){ return P+i*(W-2*P)/(h.length-1); };
+  const Y=function(v){ return H-P-(v/mx)*(H-2*P); };
+  const pts=h.map(function(x,i){ return X(i).toFixed(1)+','+Y(x.heat||0).toFixed(1); }).join(' ');
+  return '<svg viewBox="0 0 '+W+' '+H+'" role="img">'+
+    '<polygon points="'+(P)+','+(H-P)+' '+pts+' '+(W-P)+','+(H-P)+'" fill="var(--accent)" opacity=".10"/>'+
+    '<polyline points="'+pts+'" fill="none" stroke="var(--accent)" stroke-width="1.6"/>'+
+    h.map(function(x,i){ return '<circle cx="'+X(i).toFixed(1)+'" cy="'+Y(x.heat||0).toFixed(1)+'" r="1.9" fill="var(--accent)"/>'; }).join('')+
+    '<line x1="'+P+'" y1="'+(H-P)+'" x2="'+(W-P)+'" y2="'+(H-P)+'" stroke="var(--line2)"/>'+
+    '<text x="'+P+'" y="'+(H-1)+'" font-size="8" fill="var(--ink3)">'+esc((h[0].ts||"").slice(5))+'</text>'+
+    '<text x="'+(W-P)+'" y="'+(H-1)+'" font-size="8" fill="var(--ink3)" text-anchor="end">'+esc((h[h.length-1].ts||"").slice(5))+'</text>'+
+    '<text x="'+P+'" y="9" font-size="8" fill="var(--ink3)">峰值 '+mx+'%</text></svg>';
+}
+function chartDonut(m){
+  const d=[["警示",m.hi,"var(--hi)"],["注意",m.mid,"var(--mid)"],["緩和",m.lo,"var(--lo)"],["一般",m.gen,"#cfcfd4"]];
+  const tot=Math.max(1,m.n), R=30, C=2*Math.PI*R;
+  let off=0, segs="";
+  d.forEach(function(x){
+    const len=C*x[1]/tot;
+    if(len>0.5) segs+='<circle cx="46" cy="40" r="'+R+'" fill="none" stroke="'+x[2]+'" stroke-width="11" '+
+      'stroke-dasharray="'+len.toFixed(2)+' '+(C-len).toFixed(2)+'" stroke-dashoffset="'+(-off).toFixed(2)+
+      '" transform="rotate(-90 46 40)"/>';
+    off+=len;
+  });
+  return '<svg viewBox="0 0 92 78" style="max-height:104px" role="img">'+segs+
+    '<text x="46" y="39" font-size="15" font-weight="600" text-anchor="middle" fill="var(--ink)">'+m.n+'</text>'+
+    '<text x="46" y="50" font-size="7" text-anchor="middle" fill="var(--ink3)">EVENTS</text></svg>'+
+    '<div class="lgd">'+d.map(function(x){return '<span class="lg"><i style="background:'+x[2]+'"></i>'+x[0]+' '+x[1]+'</span>';}).join('')+'</div>';
+}
+function chartBars(){
+  const ss=(DATA.sources||[]).filter(function(s){return s.ok;}).sort(function(a,b){return b.n-a.n;}).slice(0,9);
+  if(!ss.length) return '<div class="evn">無資料</div>';
+  const mx=Math.max.apply(null, ss.map(function(s){return s.n;}));
+  return ss.map(function(s){
+    return '<div class="barrow"><span class="bl">'+esc(s.name)+'</span>'+
+      '<span class="bt"><i style="width:'+Math.max(2, 100*s.n/mx).toFixed(1)+'%"></i></span>'+
+      '<span class="bv">'+s.n+'</span></div>';
+  }).join('');
+}
+
+/* ------- 共機／共艦：雙軸圖、明細、相關性 ------- */
+function corrWord(r){
+  const a=Math.abs(r);
+  if(a>=0.7) return "強";
+  if(a>=0.4) return "中等";
+  if(a>=0.2) return "弱";
+  return "幾乎沒有";
+}
+function chartPla(){
+  const P=DATA.pla||{}, S=(P.series||[]).slice(-18);
+  if(!S.length) return '<div class="evn">尚未取得資料</div>';
+  const tot=S.map(function(x){ return (x.air||0)+(x.ship||0); });
+  const mxT=Math.max(1, Math.max.apply(null, tot));
+  const hm={}, di=P.dayIndex||{};
+  S.forEach(function(x){ if(di[x.day]!=null) hm[x.day]=di[x.day]; });
+  (P.pairs||[]).forEach(function(p){ if(hm[p.d]==null) hm[p.d]=p.heat; });
+  const hv=S.map(function(x){ return (hm[x.day]==null? null : hm[x.day]); });
+  const hvOk=hv.filter(function(v){ return v!=null; });
+  const mxH=Math.max(1, hvOk.length? Math.max.apply(null, hvOk) : 1);
+  const W=340, H=126, PL=26, PR=6, PT=15, PB=22;
+  const step=(W-PL-PR)/S.length, bw=Math.max(3, step*0.52);
+  const yT=function(v){ return H-PB-(v/mxT)*(H-PT-PB); };
+  const yH=function(v){ return H-PB-(v/mxH)*(H-PT-PB); };
+  let bars="";
+  S.forEach(function(x,i){
+    const cx=PL+step*i+step/2, y=yT(tot[i]);
+    bars+='<rect x="'+(cx-bw/2).toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+bw.toFixed(1)+
+      '" height="'+Math.max(1,(H-PB-y)).toFixed(1)+'" rx="1.5" fill="var(--accent)" opacity=".55">'+
+      '<title>'+esc(x.day)+'：機 '+x.air+'、艦 '+x.ship+
+      (x.official!=null? '、公務船 '+x.official : '')+'</title></rect>';
+  });
+  const pts=[];
+  hv.forEach(function(v,i){ if(v!=null) pts.push((PL+step*i+step/2).toFixed(1)+','+yH(v).toFixed(1)); });
+  const line=pts.length>1? '<polyline points="'+pts.join(' ')+'" fill="none" stroke="var(--hi)" stroke-width="1.7"/>' : '';
+  const dots=pts.map(function(p){ const a=p.split(','); return '<circle cx="'+a[0]+'" cy="'+a[1]+'" r="2.2" fill="var(--hi)"/>'; }).join('');
+  const idx=[0, Math.floor((S.length-1)/2), S.length-1].filter(function(v,i,a){ return v>=0 && a.indexOf(v)===i; });
+  const labels=idx.map(function(i){
+    return '<text x="'+(PL+step*i+step/2).toFixed(1)+'" y="'+(H-7)+'" font-size="7.5" fill="var(--ink3)" text-anchor="middle">'+
+      esc((S[i].day||"").slice(5))+'</text>';
+  }).join('');
+  return '<svg viewBox="0 0 '+W+' '+H+'" role="img">'+
+    '<line x1="'+PL+'" y1="'+(H-PB)+'" x2="'+(W-PR)+'" y2="'+(H-PB)+'" stroke="var(--line2)"/>'+
+    bars+line+dots+labels+
+    '<text x="0" y="'+(PT-5)+'" font-size="7.5" fill="var(--ink3)">機＋艦 max '+mxT+'</text>'+
+    '<text x="'+(W-PR)+'" y="'+(PT-5)+'" font-size="7.5" fill="var(--hi)" text-anchor="end">指數 max '+mxH+'%</text>'+
+  '</svg>'+
+  '<div class="lgd"><span class="lg"><i style="background:var(--accent);opacity:.55"></i>共機架次＋共艦艘次</span>'+
+  '<span class="lg"><i style="background:var(--hi)"></i>風險指標（%）</span></div>';
+}
+function renderPla(){
+  const P=DATA.pla||{}, L=P.latest, now=document.getElementById("plaNow");
+  if(!now) return;
+  if(L){
+    now.innerHTML='<div class="statrow">'+
+      '<div class="st"><b>'+(L.air==null?"—":L.air)+'</b><span>共機 架次</span></div>'+
+      '<div class="st"><b>'+(L.ship==null?"—":L.ship)+'</b><span>共艦 艘次</span></div>'+
+      '<div class="st"><b>'+(L.official==null?"—":L.official)+'</b><span>公務船 艘次</span></div>'+
+      '</div><div class="evn" style="margin-top:7px">'+esc(L.day)+' 公布（'+(L.n||0)+' 則報導一致）</div>';
+  } else {
+    now.innerHTML='<div class="evn">尚未取得資料</div>';
+  }
+  const S=(P.series||[]).slice(-10).reverse();
+  const hm={}, di=P.dayIndex||{};
+  S.forEach(function(x){ if(di[x.day]!=null) hm[x.day]=di[x.day]; });
+  (P.pairs||[]).forEach(function(p){ if(hm[p.d]==null) hm[p.d]=p.heat; });
+  document.getElementById("plaTable").innerHTML = S.length
+    ? '<table class="mini"><thead><tr><th>公布日</th><th>機</th><th>艦</th><th>公務船</th><th>合計</th><th>指數</th></tr></thead><tbody>'+
+      S.map(function(x){
+        return '<tr><td class="mono">'+esc(x.day)+'</td>'+
+          '<td class="mono">'+(x.air==null?"—":x.air)+'</td>'+
+          '<td class="mono">'+(x.ship==null?"—":x.ship)+'</td>'+
+          '<td class="mono">'+(x.official==null?"—":x.official)+'</td>'+
+          '<td class="mono">'+((x.air||0)+(x.ship||0))+'</td>'+
+          '<td class="mono">'+(hm[x.day]==null?"—":hm[x.day]+"%")+'</td></tr>';
+      }).join('')+'</tbody></table>'
+    : '<div class="evn">無資料</div>';
+  const c=document.getElementById("plaCorr"), n=P.n_pairs||0, r=P.r;
+  if(r!=null && n>=3){
+    c.innerHTML='皮爾森相關係數 <span class="rfloat">r = '+r.toFixed(3)+'</span>（n = '+n+' 天）→ <b>'+
+      corrWord(r)+'</b>的正相關'+(r<0?'（實際為負相關）':'')+'。'+
+      (n<10? ' <b>樣本數仍少，請勿據此推論。</b>' : '');
+  } else {
+    c.innerHTML='<b>相關性尚未可計算</b>：可配對天數 n = '+n+'（需 ≥ 3 天）。'+
+      '共機／共艦資料已累積 '+((P.series||[]).length)+' 天，但<b>風險指標僅從本站開始記錄的日期起才有值</b>，'+
+      '因此要等指數累積幾天後才會自動出現相關係數。';
+  }
 }
 
 /* ------- 事件計算：以勾選來源的成員重算層級 ------- */
@@ -382,17 +741,41 @@ function renderAll(){
     '<span class="chip">緩和 <b>'+m.lo+'</b></span>'+
     '<span class="chip">一般 <b>'+m.gen+'</b></span>';
 
+  // 洞察與圖表：用「勾選來源後」的完整事件集，不受下方清單篩選影響
+  document.getElementById("insights").innerHTML = insights(evs, m);
+  document.getElementById("chLine").innerHTML  = chartLine();
+  document.getElementById("chDonut").innerHTML = chartDonut(m);
+  document.getElementById("chBars").innerHTML  = chartBars();
+  document.getElementById("chPla").innerHTML   = chartPla();
+  renderPla();
+  paintTb();
+
+  // 清單：套用工具列（層級快篩 + 搜尋 + 排序）
   const order={警示:0,注意:1,緩和:2,一般:3};
-  evs.sort((a,b)=>order[a.tier]-order[b.tier]||b.nsrcs-a.nsrcs||(a.p<b.p?1:-1));
-  const main=evs.filter(e=>e.tier!=="一般");
-  const gen=evs.filter(e=>e.tier==="一般");
+  const sorters={
+    sev:function(a,b){ return order[a.tier]-order[b.tier] || b.nsrcs-a.nsrcs; },
+    new:function(a,b){ return String(b.p||"").localeCompare(String(a.p||"")); },
+    src:function(a,b){ return b.nsrcs-a.nsrcs || order[a.tier]-order[b.tier]; }
+  };
+  let view=evs.slice();
+  if(tier!=="all") view=view.filter(function(e){ return e.tier===tier; });
+  if(q){
+    const ql=q.toLowerCase();
+    view=view.filter(function(e){ return ((e.rep||"")+" "+(e.kw||"")).toLowerCase().indexOf(ql)>=0; });
+  }
+  view.sort(sorters[sortBy]||sorters.sev);
+
+  const main=view.filter(function(e){ return e.tier!=="一般"; });
+  const gen=view.filter(function(e){ return e.tier==="一般"; });
   document.getElementById("stream").innerHTML = main.length
-    ? main.map((e,i)=>card(e,i)).join("")
-    : '<div class="empty">目前勾選的來源中，沒有命中警示／注意／緩和關鍵詞的事件。</div>';
-  document.getElementById("genlist").innerHTML = gen.map((e,i)=>card(e,900+i)).join("");
+    ? main.map(function(e,i){ return card(e,i); }).join("")
+    : '<div class="empty">'+((tier!=="all"||q)
+        ? "目前條件下沒有符合的事件。"
+        : "目前勾選的來源中，沒有命中警示／注意／緩和關鍵詞的事件。")+'</div>';
+  document.getElementById("genlist").innerHTML = gen.map(function(e,i){ return card(e,900+i); }).join("");
   document.getElementById("gensum").textContent="其他 "+gen.length+" 個事件（未命中關鍵詞）";
   document.getElementById("genwrap").style.display = gen.length? "block":"none";
-  document.getElementById("evhint").textContent="　"+main.length+" 件";
+  document.getElementById("evhint").textContent="　顯示 "+view.length+" / "+evs.length+" 件";
   LAST_EVS=evs;
   renderInd(evs);                       // 人工判讀指標跟著同一批事件同步
 }
@@ -499,7 +882,8 @@ function renderInd(evs){
 
 /* ------- 靜態區 ------- */
 function fillStatic(){
-  document.getElementById("ts").textContent=DATA.ts;
+  document.getElementById("ts").textContent="上次更新 "+DATA.ts;
+  const ts2=document.getElementById("ts2"); if(ts2) ts2.textContent=DATA.ts;
   const h=DATA.hist||[];
   document.getElementById("hist").innerHTML = h.length
     ? '<table><thead><tr><th>時間</th><th>事件數</th><th>警示</th><th>注意</th><th>佔比</th><th>層級</th><th>來源</th></tr></thead><tbody>'+
@@ -513,7 +897,22 @@ function fillStatic(){
     ((DATA.errors&&DATA.errors.length)?'<div style="margin-top:6px">抓取警告：'+esc(DATA.errors.join('；'))+'</div>':'');
 }
 
-loadChk(); loadManual(); fillStatic(); renderAll();
+/* ------- 廣告版位：只有填了 pub 才會掛上去 ------- */
+function mountAds(){
+  var A=window.__ADS__||{};
+  if(!A.pub) return;                      // 沒填 pub → 版位保持隱藏，不留空白
+  document.querySelectorAll(".adslot").forEach(function(el){
+    var sid=(A.slot||{})[el.getAttribute("data-slot")];
+    if(!sid) return;
+    el.innerHTML='<span class="lbl">Advertisement</span>'+
+      '<ins class="adsbygoogle" style="display:block" data-ad-client="'+A.pub+'" data-ad-slot="'+sid+
+      '" data-ad-format="auto" data-full-width-responsive="true"></ins>';
+    el.style.display="block";
+    try{ (window.adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){}
+  });
+}
+
+loadChk(); loadUI(); loadManual(); fillStatic(); wireTb(); renderAll(); mountAds();
 </script>
 </body>
 </html>

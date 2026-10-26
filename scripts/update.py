@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""台海風險指標追蹤表 — 自動更新器（事件聚合版）
+"""台海風險觀測儀表板 — 自動更新器（事件聚合版）
 
 抓 29 家來源 → 關鍵詞分級 → **同一事件聚合**（多家報導只算一件）→ 產生網頁。
 
@@ -12,10 +12,12 @@
   3. 相似度：Jaccard
   4. 貪婪分群：與群內任一成員相似度 >= THRESH 即歸為同一事件（取最大值，避免漂移）
 """
-import json, os, re, ssl, subprocess, time, urllib.request, urllib.parse, xml.etree.ElementTree as ET
+import json, os, re, ssl, subprocess, sys, time, urllib.request, urllib.parse, xml.etree.ElementTree as ET
 from datetime import datetime, timezone, timedelta
 
 HERE      = os.path.dirname(os.path.abspath(__file__))
+# 註：本機輸出檔名沿用建立時的名稱（桌面上的檔案不因網站改版而更名）；
+# 雲端（GitHub Actions）一律以 TWRISK_HTML=index.html 覆寫，故與此無關。
 OUT_HTML  = os.environ.get("TWRISK_HTML", r"C:\Users\Kai\Desktop\台海風險指標追蹤表.html")
 OUT_PDF   = os.environ.get("TWRISK_PDF",  r"C:\Users\Kai\Desktop\台海風險指標追蹤表.pdf")
 HIST_JSON = os.environ.get("TWRISK_HIST", os.path.join(HERE, "twrisk_history.json"))
@@ -278,7 +280,7 @@ for sid, name, cat, domain, lang, rss in SOURCES:
                      "ok": bool(got), "url": "https://" + domain})
     for x in got:
         k, w = tier_of(x["title"])
-        arts.append({"t": x["title"], "l": x["link"], "s": sid, "k": k, "w": w, "p": (x["pub"] or "")[:22]})
+        arts.append({"t": x["title"], "l": x["link"], "s": sid, "k": k, "w": w, "p": (x["pub"] or "")[:32]})
 
 # 標題完全相同的先去重（跨來源同一則）
 seen, uniq = set(), []
@@ -287,6 +289,26 @@ for a in arts:
     if key in seen:
         continue
     seen.add(key); uniq.append(a)
+
+
+# 語料清洗：Google News 對 site: 查詢不一定嚴格遵守 when: 時間篩選，偶爾回傳多年前的
+# 舊文（實測出現 2014、2015、2016、2017、2020 年的文章）。這些舊文會混進分母、讓指數
+# 失真，因此只保留近 8 天內的報導。無法解析日期者一律保留（寧可留著，不可誤刪）。
+def _pubdate(s):
+    s = (s or "").strip()
+    if not s:
+        return None
+    try:
+        from email.utils import parsedate_to_datetime
+        return parsedate_to_datetime(s).astimezone(TW).strftime("%Y-%m-%d")
+    except Exception:
+        m = re.search(r"(\d{4})-(\d{2})-(\d{2})", s)
+        return m.group(0) if m else None
+
+
+CUT = (now - timedelta(days=8)).strftime("%Y-%m-%d")
+_drop = [a for a in uniq if (_pubdate(a.get("p")) or CUT) < CUT]
+uniq = [a for a in uniq if (_pubdate(a.get("p")) or CUT) >= CUT]
 
 uniq.sort(key=lambda a: a["p"], reverse=True)
 for i, a in enumerate(uniq):
@@ -338,13 +360,98 @@ if os.path.exists(HIST_JSON):
     except Exception:
         hist = []
 hist.append({"ts": now.strftime("%Y-%m-%d %H:%M"), "n": len(uniq), "ev": NE, "hi": n_hi,
-             "mid": n_mid, "heat": heat, "level": level,
+             "mid": n_mid, "cal": n_cal, "gen": NE - n_hi - n_mid - n_cal,
+             "heat": heat, "level": level,
              "src_ok": len(ok_src), "src_all": len(src_meta)})
 hist = hist[-90:]
 json.dump(hist, open(HIST_JSON, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 
+# ================= 共機／共艦每日活動量（國防部公布，媒體轉述）=================
+PLA_JSON = os.path.join(HERE, "pla_history.json")
+pla_new, pla_err = {}, ""
+try:
+    sys.path.insert(0, HERE)
+    import pla as plamod
+    pla_new = plamod.collect()
+except Exception as e:
+    pla_err = str(e)[:140]
+
+pla_hist = {}
+if os.path.exists(PLA_JSON):
+    try:
+        pla_hist = json.load(open(PLA_JSON, encoding="utf-8"))
+    except Exception:
+        pla_hist = {}
+for d, v in (pla_new or {}).items():                      # 新資料覆蓋舊資料（投票結果較新）
+    old = pla_hist.get(d)
+    if (not old) or (v.get("n", 0) >= old.get("n", 0)):
+        pla_hist[d] = v
+try:
+    json.dump(pla_hist, open(PLA_JSON, "w", encoding="utf-8"),
+              ensure_ascii=False, indent=1, sort_keys=True)
+except Exception as e:
+    pla_err = (pla_err + " / " + str(e))[:140]
+
+pla_series = [dict(pla_hist[k], day=k) for k in sorted(pla_hist)]
+pla_latest = pla_series[-1] if pla_series else None
+
+# 危機指數的兩種算法 ─────────────────────────────────────────────
+# (a) 執行時快照：同一天若多次更新取平均。缺點是要「等本站累積」，過去沒有值。
+day_heat = {}
+for x in hist:
+    d = (x.get("ts") or "")[:10]
+    day_heat.setdefault(d, []).append(x.get("heat", 0))
+day_heat = {d: round(sum(v) / len(v), 1) for d, v in day_heat.items()}
+
+# (b) 以「發文日」回算：把抓到的語料庫按每則報導的發文日分組，逐日算嚴重度佔比。
+#     這樣過去幾天立刻有值，不必等累積；也讓「同日配對」在時間上更對齊。
+#     （_pubdate 定義於上方語料清洗處，此處沿用。）
+day_bucket = {}
+for a in uniq:
+    d = _pubdate(a.get("p"))
+    if not d:
+        continue
+    b = day_bucket.setdefault(d, {"n": 0, "hi": 0, "mid": 0})
+    b["n"] += 1
+    if a["k"] == "警示":
+        b["hi"] += 1
+    elif a["k"] == "注意":
+        b["mid"] += 1
+day_index = {d: round(100.0 * (v["hi"] * 3 + v["mid"]) / (3.0 * max(1, v["n"])))
+             for d, v in day_bucket.items()}
+
+# 配對（以「公布日」對齊；國防部公布的是前一日活動，畫面上會註明這個時間差）
+# 指數優先採「以發文日回算」的值，沒有才退回執行時快照。
+pairs = []
+for x in pla_series:
+    d = x["day"]
+    hv = day_index.get(d, day_heat.get(d))
+    if hv is not None:
+        pairs.append({"d": d, "tot": (x.get("air") or 0) + (x.get("ship") or 0),
+                      "air": x.get("air"), "ship": x.get("ship"), "heat": hv,
+                      "src": "pubdate" if d in day_index else "snapshot"})
+
+
+def pearson(xs, ys):
+    n = len(xs)
+    if n < 3:
+        return None
+    mx, my = sum(xs) / n, sum(ys) / n
+    num = sum((a - mx) * (b - my) for a, b in zip(xs, ys))
+    dx = sum((a - mx) ** 2 for a in xs)
+    dy = sum((b - my) ** 2 for b in ys)
+    if dx == 0 or dy == 0:
+        return None
+    return num / (dx * dy) ** 0.5
+
+
+PLA = {"series": pla_series[-60:], "latest": pla_latest, "pairs": pairs,
+       "dayIndex": day_index, "dayHeat": day_heat,
+       "r": pearson([p["tot"] for p in pairs], [p["heat"] for p in pairs]),
+       "n_pairs": len(pairs), "err": pla_err}
+
 DATA = {"ts": now.strftime("%Y-%m-%d %H:%M"), "sources": src_meta, "arts": uniq,
-        "events": events, "errors": errors[:12], "hist": hist[-14:]}
+        "events": events, "errors": errors[:12], "hist": hist[-14:], "pla": PLA}
 
 tpl = open(os.path.join(HERE, "template.html"), encoding="utf-8").read()
 open(OUT_HTML, "w", encoding="utf-8").write(tpl.replace("/*__DATA__*/", json.dumps(DATA, ensure_ascii=False)))
@@ -375,6 +482,14 @@ print("更新時間", DATA["ts"])
 print("來源 %d/%d 成功；報導 %d 則 → 聚合為 %d 個事件（警示 %d／注意 %d／緩和 %d）"
       % (len(ok_src), len(src_meta), len(uniq), NE, n_hi, n_mid, n_cal))
 print("其中 %d 個事件有 2 家以上報導；佔比 %d%% → %s" % (multi, heat, level))
+if pla_latest:
+    print("共機／共艦：%s 公布　機 %s 架次、艦 %s 艘次、公務船 %s 艘次（%d 則報導一致）"
+          % (pla_latest["day"], pla_latest.get("air"), pla_latest.get("ship"),
+             pla_latest.get("official"), pla_latest.get("n", 0)))
+    print("累積 %d 天；可配對的日期 %d 天；皮爾森 r = %s"
+          % (len(pla_series), PLA["n_pairs"], ("%.3f" % PLA["r"]) if PLA["r"] is not None else "尚無法計算"))
+if pla_err:
+    print("共機／共艦 抓取警告:", pla_err)
 print("各來源:", ", ".join("%s=%d" % (s["name"], s["n"]) for s in src_meta))
 print("\n--- 最大的聚合群（檢查有沒有過度合併）---")
 for e in sorted(events, key=lambda x: -len(x["members"]))[:5]:
