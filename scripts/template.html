@@ -292,6 +292,29 @@ window.__ADS__ = { pub: "", slot: { infeed: "", bottom: "" } };
   </div>
   <div class="chips" id="chips"></div>
 
+  <h2>共機／共艦活動 PLA Activity</h2>
+  <div class="grid2">
+    <div class="panel chartbox">
+      <div class="ct">每日公布量（柱） vs 風險指標（線）</div>
+      <div id="chPla"></div>
+      <div class="evn" id="plaCorr" style="margin-top:9px"></div>
+    </div>
+    <div class="panel chartbox">
+      <div class="ct">最新公布</div>
+      <div id="plaNow"></div>
+      <div id="plaTable" style="margin-top:10px"></div>
+    </div>
+  </div>
+  <div class="panel note" style="margin-top:10px">
+    <b>資料性質與限制</b>｜數字來自<b>國防部每日公布、媒體轉述</b>（非官方 API）。國防部於每日上午公布
+    「前一日」的偵獲量，故<b>公布日 ≠ 活動日</b>（本表以公布日對齊）。同一日不同報導偶有不同數字，
+    此處取<b>最多來源一致</b>者；查無公布值的日期會留白，不補零。
+    公務船（海警、公務船）與軍艦<b>分開記錄</b>，不合併計算。<br>
+    <b>關於相關性</b>｜皮爾森相關係數僅描述兩組數字的<b>同步程度</b>，<b>不代表因果</b>。
+    且兩組序列都來自同一批新聞報導，可能出現「報導量一起增加」造成的<b>假相關</b>；風險指標衡量的又是
+    媒體用語強度而非事件本身，解讀時請一併考慮這點。
+  </div>
+
   <h2>資料洞察 Data Insights</h2>
   <div class="panel note"><ul class="inslist" id="insights"></ul></div>
 
@@ -338,29 +361,6 @@ window.__ADS__ = { pub: "", slot: { infeed: "", bottom: "" } };
 
   <h2>人工判讀指標 Manual <span class="indsum" id="indsum"></span></h2>
   <div id="groups"></div>
-
-  <h2>共機／共艦活動 PLA Activity</h2>
-  <div class="grid2">
-    <div class="panel chartbox">
-      <div class="ct">每日公布量（柱） vs 風險指標（線）</div>
-      <div id="chPla"></div>
-      <div class="evn" id="plaCorr" style="margin-top:9px"></div>
-    </div>
-    <div class="panel chartbox">
-      <div class="ct">最新公布</div>
-      <div id="plaNow"></div>
-      <div id="plaTable" style="margin-top:10px"></div>
-    </div>
-  </div>
-  <div class="panel note" style="margin-top:10px">
-    <b>資料性質與限制</b>｜數字來自<b>國防部每日公布、媒體轉述</b>（非官方 API）。國防部於每日上午公布
-    「前一日」的偵獲量，故<b>公布日 ≠ 活動日</b>（本表以公布日對齊）。同一日不同報導偶有不同數字，
-    此處取<b>最多來源一致</b>者；查無公布值的日期會留白，不補零。
-    公務船（海警、公務船）與軍艦<b>分開記錄</b>，不合併計算。<br>
-    <b>關於相關性</b>｜皮爾森相關係數僅描述兩組數字的<b>同步程度</b>，<b>不代表因果</b>。
-    且兩組序列都來自同一批新聞報導，可能出現「報導量一起增加」造成的<b>假相關</b>；風險指標衡量的又是
-    媒體用語強度而非事件本身，解讀時請一併考慮這點。
-  </div>
 
   <h2>趨勢 Trend</h2>
   <div class="grid3">
